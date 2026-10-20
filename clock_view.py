@@ -1,9 +1,3 @@
-import select
-import shutil
-import sys
-import termios
-import tty
-
 PI = 3.141592653589793
 
 RESET = "\033[0m"
@@ -46,13 +40,31 @@ class ClockCanvasApp:
         self._use_proc_uptime = True
         self._fallback_seconds = 0.0
         self.menu_mode = False
-        self.menu_input = ""
         self.menu_error = ""
-        size = shutil.get_terminal_size((80, 24))
-        self.terminal_columns = size.columns
-        self.terminal_lines = size.lines
+        self.terminal_lines = self._read_environment_int("LINES", 34)
+        self.terminal_columns = self._read_environment_int("COLUMNS", 114)
         self._configure_layout()
-        self._old_terminal_settings = None
+
+    def _read_environment_value(self, name):
+        prefix = (name + "=").encode()
+        try:
+            with open("/proc/self/environ", "rb") as file:
+                entries = file.read().split(b"\0")
+        except OSError:
+            return None
+        for entry in entries:
+            if entry.startswith(prefix):
+                return entry[len(prefix):].decode()
+        return None
+
+    def _read_environment_int(self, name, default):
+        value = self._read_environment_value(name)
+        if value is None:
+            return default
+        try:
+            return int(value)
+        except ValueError:
+            return default
 
     def _configure_layout(self):
         self.frame_width = max(40, self.terminal_columns - 1)
@@ -87,36 +99,15 @@ class ClockCanvasApp:
             self.panel_x = None
         self.top_padding = max(0, (self.terminal_lines - self.frame_height - 2) // 2)
 
-    def _refresh_terminal_size(self):
-        size = shutil.get_terminal_size((80, 24))
-        columns = size.columns
-        lines = size.lines
-        if columns == self.terminal_columns and lines == self.terminal_lines:
-            return False
-        self.terminal_columns = columns
-        self.terminal_lines = lines
-        self._configure_layout()
-        self.menu_input = ""
-        self.menu_error = ""
-        return True
-
     def run(self):
         self._enter_screen()
         try:
-            self._old_terminal_settings = termios.tcgetattr(sys.stdin.fileno())
-            tty.setcbreak(sys.stdin.fileno())
             self._synchronize_clock()
             self.clock.start()
             self._run_loop()
         except KeyboardInterrupt:
             pass
         finally:
-            if self._old_terminal_settings is not None:
-                termios.tcsetattr(
-                    sys.stdin.fileno(),
-                    termios.TCSADRAIN,
-                    self._old_terminal_settings,
-                )
             self._leave_screen()
 
     def _run_loop(self):
@@ -135,72 +126,36 @@ class ClockCanvasApp:
                 while now >= next_tick:
                     self.clock.tick_forward()
                     next_tick += 1.0
-                if self._refresh_terminal_size():
-                    print("\033[2J\033[H", end="", flush=True)
-                self._read_input()
                 fraction = now - (next_tick - 1.0)
                 if fraction < 0.0:
                     fraction = 0.0
                 elif fraction > 1.0:
                     fraction = 1.0
-                if self.menu_mode:
-                    self._render_menu(fraction)
-                else:
-                    self._render_auto(fraction)
+                self._render_auto(fraction)
                 self._wait_until(now + 0.1)
             except KeyboardInterrupt:
-                self._toggle_menu()
+                self._blocking_menu()
 
-    def _toggle_menu(self):
-        self.menu_mode = not self.menu_mode
-        self.menu_input = ""
+    def _blocking_menu(self):
+        self.menu_mode = True
         self.menu_error = ""
-        print("\033[2J\033[H", end="", flush=True)
-
-    def _read_input(self):
         try:
-            ready, _, _ = select.select([sys.stdin], [], [], 0.0)
-        except (OSError, ValueError):
-            return
-        if not ready:
-            return
-        try:
-            character = sys.stdin.read(1)
-        except (OSError, ValueError):
-            return
-        if not character:
-            return
-        if character == "\x03":
-            self._toggle_menu()
-            return
-        if not self.menu_mode:
-            return
-        if character in ("\r", "\n"):
-            self._submit_menu_input()
-            return
-        if character in ("\x7f", "\b"):
-            self.menu_input = self.menu_input[:-1]
-            self.menu_error = ""
-            return
-        if character in "0123456789":
-            if self.menu_error or self.menu_input:
-                self.menu_input = ""
-                self.menu_error = "Solo se permite un número del 0 al 9"
-            else:
-                self.menu_input = character
+            while True:
+                self._render_menu(0.0)
+                try:
+                    choice = input("Opción (0-9): ").strip()
+                except KeyboardInterrupt:
+                    self.menu_mode = False
+                    return
+                if len(choice) != 1 or choice not in "0123456789":
+                    self.menu_error = "Solo se permite un número del 0 al 9"
+                    continue
                 self.menu_error = ""
-            return
-        self.menu_input = ""
-        self.menu_error = "Solo se permite un número del 0 al 9"
-
-    def _submit_menu_input(self):
-        value = self.menu_input
-        self.menu_input = ""
-        if self.menu_error or len(value) != 1 or value not in "0123456789":
-            self.menu_error = "Solo se permite un número del 0 al 9"
-            return
-        self.menu_error = ""
-        self._handle_command(value)
+                self._handle_command(choice)
+                if not self.menu_mode:
+                    return
+        finally:
+            self.menu_mode = False
 
     def _handle_command(self, choice):
         if choice == "1":
@@ -554,14 +509,7 @@ class ClockCanvasApp:
         self._panel_text(grid, colors, 28, "La hora sigue avanzando", COLOR_DIM)
         if self.menu_error:
             self._panel_text(grid, colors, 30, self.menu_error, COLOR_SECOND)
-        self._panel_text(
-            grid,
-            colors,
-            self.frame_height - 1,
-            f"Opción (0-9): {self.menu_input}",
-            COLOR_STATUS,
-        )
-        return self._rows(grid, colors)
+        return self._rows(grid, colors)[: self.frame_height - 1]
 
     def _build_grid(self, fraction):
         if self.side_layout:
@@ -596,7 +544,6 @@ class ClockCanvasApp:
         return grid, colors
 
     def _render_menu(self, fraction):
-        self._refresh_terminal_size()
         if self.side_layout:
             self._write_frame(self._render_side_menu(fraction), clear=True)
             return
@@ -687,16 +634,9 @@ class ClockCanvasApp:
         )
         if self.menu_error:
             self._centered_text(
-                grid, colors, self.frame_height - 2, self.menu_error, COLOR_SECOND
+                grid, colors, instruction_y + 2, self.menu_error, COLOR_SECOND
             )
-        self._centered_text(
-            grid,
-            colors,
-            self.frame_height - 1,
-            f"Opción (0-9): {self.menu_input}",
-            COLOR_STATUS,
-        )
-        self._write_frame(self._rows(grid, colors), clear=True)
+        self._write_frame(self._rows(grid, colors)[:self.frame_height - 1], clear=True)
 
     def _rows(self, grid, colors):
         rows = []
