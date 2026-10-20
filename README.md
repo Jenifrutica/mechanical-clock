@@ -17,10 +17,10 @@ Archivos:
 ## Ejecución local
 
 ```text
-python3 main.py
+./entrypoint.sh
 ```
 
-Al abrir, el reloj inicia en marcha automática en hora Colombia (UTC-5). Las manecillas giran en una terminal a pantalla completa. La hora se muestra con décimas y el cronómetro arranca automáticamente; solo aparece mientras esté activo. Desde el menú puedes pausarlo o reiniciarlo. La esfera tiene números del 1 al 12. En pantallas anchas el reloj queda a la izquierda y la información a la derecha; en pantallas pequeñas, la información va al pie.
+Al abrir, el reloj inicia en marcha automática en hora Colombia (UTC-5). Las manecillas giran en una terminal a pantalla completa. La hora se muestra con décimas. El cronómetro arranca automáticamente y se muestra únicamente en el menú, donde puedes pausarlo o reiniciarlo. La esfera tiene números del 1 al 12. En pantallas anchas el reloj queda a la izquierda y la información a la derecha; en pantallas pequeñas, la información va al pie.
 
 ## Controles
 
@@ -33,9 +33,11 @@ Al abrir, el reloj inicia en marcha automática en hora Colombia (UTC-5). Las ma
 - `6`: reiniciar a `12:00:00`.
 - `7`: redibujar.
 - `8`: volver a la hora actual.
-- `9`: salir.
+- `9`: iniciar/pausar el cronómetro.
+- `10`: reiniciar el cronómetro.
+- `11`: salir.
 
-El reloj sigue avanzando mientras el menú está abierto. El cronómetro arranca automáticamente y se muestra solo en la pantalla principal.
+El reloj sigue avanzando mientras el menú está abierto. El cronómetro se muestra y controla en el menú, no en la pantalla principal.
 
 Escribe el número y presiona `Enter`. Haz clic dentro de la terminal para que el teclado funcione.
 

@@ -7,10 +7,14 @@ export CLOCK_CMD_FILE="$CMD_FILE"
 : > "$CMD_FILE"
 (while :; do stty size < /dev/tty > "$SIZE_FILE" 2>/dev/null; sleep 0.25; done) &
 SIZE_PID=$!
-(trap '' INT; while IFS= read -r line; do printf '%s\n' "$line" >> "$CMD_FILE"; done) &
-READER_PID=$!
-trap 'kill "$SIZE_PID" "$READER_PID" 2>/dev/null; rm -f "$SIZE_FILE" "$CMD_FILE"' EXIT TERM
-set -- $(stty size < /dev/tty)
-export LINES=$1
-export COLUMNS=$2
-python3 main.py
+setsid python3 main.py < /dev/null &
+APP_PID=$!
+(while kill -0 "$APP_PID" 2>/dev/null; do sleep 1; done; kill -TERM $$) &
+WATCH_PID=$!
+trap 'printf "__menu__\n" >> "$CMD_FILE"' INT
+trap 'kill "$SIZE_PID" "$WATCH_PID" 2>/dev/null; rm -f "$SIZE_FILE" "$CMD_FILE"' EXIT TERM
+while :; do
+    if IFS= read -r line; then
+        printf '%s\n' "$line" >> "$CMD_FILE"
+    fi
+done
