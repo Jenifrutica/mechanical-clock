@@ -685,7 +685,7 @@ class ClockCanvasApp:
         return rows
 
     def _write_frame(self, rows, clear=False, newline=False):
-        prefix = "\033[2J\033[H" if clear else "\033[H"
+        prefix = "\033[?1049h\033[2J\033[H" if clear else "\033[?1049h\033[H"
         if self.top_padding:
             rows = [""] * self.top_padding + list(rows)
         text = prefix + "\n".join(row + "\033[K" for row in rows)
