@@ -480,11 +480,20 @@ class ClockCanvasApp:
             grid, colors, 12, f"HORA {round(hour_angle)}°", COLOR_STATUS
         )
 
-        chrono = self._format_chronometer(
-            self.clock.chronometer.value(self._time_now())
-        )
-        self._panel_text(grid, colors, 15, "CRONÓMETRO", COLOR_SECOND)
-        self._panel_text(grid, colors, 16, chrono, COLOR_STATUS)
+        chrono_now = self._time_now()
+        chrono_value = self.clock.chronometer.value(chrono_now)
+        if self.clock.chronometer.running() or chrono_value > 0.0:
+            chrono_state = "▶" if self.clock.chronometer.running() else "⏸"
+            self._panel_text(
+                grid, colors, 15, f"CRONÓMETRO {chrono_state}", COLOR_SECOND
+            )
+            self._panel_text(
+                grid,
+                colors,
+                16,
+                self._format_chronometer(chrono_value),
+                COLOR_STATUS,
+            )
         self._panel_text(grid, colors, 18, "PISTAS 60 / 60 / 12", COLOR_DIM)
         self._panel_text(grid, colors, 19, "ACARREO S -> M -> H", COLOR_DIM)
 
@@ -535,11 +544,20 @@ class ClockCanvasApp:
             self._panel_text(grid, colors, 9 + offset, option, COLOR_STATUS)
         self._panel_text(grid, colors, 21, "Escribe el número", COLOR_DIM)
         self._panel_text(grid, colors, 22, "y pulsa ENTER", COLOR_DIM)
-        chrono = self._format_chronometer(
-            self.clock.chronometer.value(self._time_now())
-        )
-        self._panel_text(grid, colors, 24, "CRONÓMETRO", COLOR_SECOND)
-        self._panel_text(grid, colors, 25, chrono, COLOR_STATUS)
+        chrono_now = self._time_now()
+        chrono_value = self.clock.chronometer.value(chrono_now)
+        if self.clock.chronometer.running() or chrono_value > 0.0:
+            chrono_state = "▶" if self.clock.chronometer.running() else "⏸"
+            self._panel_text(
+                grid, colors, 24, f"CRONÓMETRO {chrono_state}", COLOR_SECOND
+            )
+            self._panel_text(
+                grid,
+                colors,
+                25,
+                self._format_chronometer(chrono_value),
+                COLOR_STATUS,
+            )
         self._panel_text(grid, colors, 27, "ENTER solo = iniciar", COLOR_DIM)
         self._panel_text(
             grid, colors, 29, f"SEG {round(second_angle)}°  MIN {round(minute_angle)}°  HORA {round(hour_angle)}°", COLOR_DIM
