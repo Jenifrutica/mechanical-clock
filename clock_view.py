@@ -42,20 +42,35 @@ class ClockCanvasApp:
         self.terminal_lines = self._read_environment_int("LINES", 24)
         self.terminal_columns = self._read_environment_int("COLUMNS", 80)
         self.frame_width = max(40, self.terminal_columns - 1)
-        self.center_x = self.frame_width // 2
-        self.full_layout = self.terminal_lines >= 34
-        if self.full_layout:
+        self.side_layout = self.terminal_columns >= 100 and self.terminal_lines >= 34
+        self.full_layout = self.terminal_lines >= 34 and not self.side_layout
+        if self.side_layout:
             self.frame_height = 34
+            self.center_x = 29
+            self.center_y = 17
+            self.radius_x = 25
+            self.radius_y = 14
+            self.footer_y = 33
+            self.separator_x = 59
+            self.panel_x = 62
+        elif self.full_layout:
+            self.frame_height = 34
+            self.center_x = self.frame_width // 2
             self.center_y = 17
             self.radius_x = min(25, max(10, (self.frame_width - 6) // 2))
             self.radius_y = max(6, round(self.radius_x * 14 / 25))
             self.footer_y = 33
+            self.separator_x = None
+            self.panel_x = None
         else:
             self.frame_height = 24
+            self.center_x = self.frame_width // 2
             self.center_y = 11
             self.radius_x = min(19, max(8, (self.frame_width - 4) // 2))
             self.radius_y = max(4, round(self.radius_x * 11 / 19))
             self.footer_y = 23
+            self.separator_x = None
+            self.panel_x = None
         self.top_padding = max(0, (self.terminal_lines - self.frame_height - 2) // 2)
 
     def _read_environment_int(self, name, default):
@@ -338,7 +353,127 @@ class ClockCanvasApp:
         grid[self.center_y][self.center_x] = "●"
         colors[self.center_y][self.center_x] = COLOR_CENTER
 
+    def _panel_x_for(self, text):
+        panel_width = self.frame_width - self.panel_x
+        return self.panel_x + max(0, (panel_width - len(text)) // 2)
+
+    def _panel_text(self, grid, colors, y, text, color=None):
+        self._put_text(grid, colors, self._panel_x_for(text), y, text, color)
+
+    def _panel_mode(self, grid, colors, y, mode, running):
+        text = f"MODO {mode}"
+        x = self._panel_x_for(text)
+        self._put_text(grid, colors, x, y, "MODO ", COLOR_STATUS)
+        self._put_text(
+            grid,
+            colors,
+            x + 5,
+            y,
+            mode,
+            COLOR_SECOND if running else COLOR_DIM,
+        )
+
+    def _draw_separator(self, grid, colors):
+        for y in range(2, self.frame_height - 2):
+            grid[y][self.separator_x] = "│"
+            colors[y][self.separator_x] = COLOR_RIM
+
+    def _build_side_grid(self, fraction):
+        grid = [[" "] * self.frame_width for _ in range(self.frame_height)]
+        colors = [[None] * self.frame_width for _ in range(self.frame_height)]
+        data = self.clock.readout()
+        second_angle, minute_angle, hour_angle, second_position, minute_position, hour_position = (
+            self._angles(fraction)
+        )
+        self._draw_dial(grid, colors, second_position, minute_position, hour_position)
+        self._draw_separator(grid, colors)
+
+        mode = "MARCHA" if data["running"] else "PAUSA"
+        time_text = f"{data['hours']:02d}:{data['minutes']:02d}:{data['seconds']:02d}"
+        self._panel_text(grid, colors, 3, time_text, COLOR_STATUS)
+        self._panel_text(grid, colors, 4, "Colombia (UTC-5)", COLOR_DIM)
+        self._panel_mode(grid, colors, 6, mode, data["running"])
+
+        self._panel_text(grid, colors, 9, "ÁNGULOS", COLOR_SECOND)
+        self._panel_text(
+            grid, colors, 10, f"SEG  {round(second_angle)}°", COLOR_STATUS
+        )
+        self._panel_text(
+            grid, colors, 11, f"MIN  {round(minute_angle)}°", COLOR_STATUS
+        )
+        self._panel_text(
+            grid, colors, 12, f"HORA {round(hour_angle)}°", COLOR_STATUS
+        )
+
+        self._panel_text(grid, colors, 15, "PISTAS", COLOR_SECOND)
+        self._panel_text(grid, colors, 16, "60 / 60 / 12", COLOR_DIM)
+        self._panel_text(grid, colors, 17, "ACARREO", COLOR_SECOND)
+        self._panel_text(grid, colors, 18, "Seg -> Min -> Hora", COLOR_DIM)
+
+        self._panel_text(grid, colors, 21, "CONTROLES", COLOR_SECOND)
+        self._panel_text(grid, colors, 22, "Ctrl+C menú", COLOR_STATUS)
+        self._panel_text(grid, colors, 23, "Enter reanudar", COLOR_STATUS)
+        self._panel_text(grid, colors, 24, "2/3  ±1s", COLOR_DIM)
+        self._panel_text(grid, colors, 25, "4/5  ±10min", COLOR_DIM)
+        self._panel_text(grid, colors, 26, "6  reiniciar", COLOR_DIM)
+        self._panel_text(grid, colors, 27, "7  redibujar", COLOR_DIM)
+        self._panel_text(grid, colors, 28, "8  salir", COLOR_DIM)
+        self._panel_text(grid, colors, 30, "Clic en la terminal", COLOR_DIM)
+        return grid, colors
+
+    def _render_side_menu(self):
+        grid = [[" "] * self.frame_width for _ in range(self.frame_height)]
+        colors = [[None] * self.frame_width for _ in range(self.frame_height)]
+        data = self.clock.readout()
+        second_angle, minute_angle, hour_angle, _, _, _ = self._angles(0.0)
+        mode = "MARCHA" if data["running"] else "PAUSA"
+        time_text = f"{data['hours']:02d}:{data['minutes']:02d}:{data['seconds']:02d}"
+        self._draw_dial(
+            grid,
+            colors,
+            self._angles(0.0)[3],
+            self._angles(0.0)[4],
+            self._angles(0.0)[5],
+        )
+        self._draw_separator(grid, colors)
+        self._panel_text(grid, colors, 3, f"HORA {time_text}", COLOR_STATUS)
+        self._panel_text(grid, colors, 4, "Colombia (UTC-5)", COLOR_DIM)
+        self._panel_mode(grid, colors, 5, mode, data["running"])
+        self._panel_text(grid, colors, 7, "MENÚ", COLOR_SECOND)
+        options = (
+            "1 Iniciar/Reanudar",
+            "2 +1s",
+            "3 -1s",
+            "4 +10min",
+            "5 -10min",
+            "6 Reiniciar",
+            "7 Redibujar",
+            "8 Salir",
+        )
+        for offset, option in enumerate(options):
+            self._panel_text(grid, colors, 9 + offset, option, COLOR_STATUS)
+        self._panel_text(grid, colors, 19, "Escribe el número", COLOR_DIM)
+        self._panel_text(grid, colors, 20, "y pulsa ENTER", COLOR_DIM)
+        self._panel_text(grid, colors, 22, "ENTER solo = iniciar", COLOR_DIM)
+        self._panel_text(
+            grid, colors, 24, f"SEG  {round(second_angle)}°", COLOR_DIM
+        )
+        self._panel_text(
+            grid, colors, 25, f"MIN  {round(minute_angle)}°", COLOR_DIM
+        )
+        self._panel_text(
+            grid, colors, 26, f"HORA {round(hour_angle)}°", COLOR_DIM
+        )
+        self._panel_text(grid, colors, 28, "Clic en la terminal", COLOR_DIM)
+        self._write_frame(
+            self._rows(grid, colors)[:self.frame_height - 1],
+            clear=True,
+            newline=True,
+        )
+
     def _build_grid(self, fraction):
+        if self.side_layout:
+            return self._build_side_grid(fraction)
         grid = [[" "] * self.frame_width for _ in range(self.frame_height)]
         colors = [[None] * self.frame_width for _ in range(self.frame_height)]
         data = self.clock.readout()
@@ -369,6 +504,9 @@ class ClockCanvasApp:
         return grid, colors
 
     def _render_menu(self):
+        if self.side_layout:
+            self._render_side_menu()
+            return
         grid = [[" "] * self.frame_width for _ in range(self.frame_height)]
         colors = [[None] * self.frame_width for _ in range(self.frame_height)]
         data = self.clock.readout()

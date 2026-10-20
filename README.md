@@ -20,7 +20,7 @@ Archivos:
 python3 main.py
 ```
 
-Al abrir, el reloj inicia en marcha automática en hora Colombia (UTC-5). Las manecillas giran en una terminal a pantalla completa. La esfera tiene números del 1 al 12; la información y los controles aparecen en el pie.
+Al abrir, el reloj inicia en marcha automática en hora Colombia (UTC-5). Las manecillas giran en una terminal a pantalla completa. La esfera tiene números del 1 al 12. En pantallas anchas el reloj queda a la izquierda y la información a la derecha; en pantallas pequeñas, la información va al pie.
 
 ## Controles
 
