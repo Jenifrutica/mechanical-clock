@@ -30,7 +30,9 @@ Menú:
 ./entrypoint.sh
 ```
 
-Al abrir, el reloj inicia en marcha automática en hora Colombia (UTC-5). Las manecillas giran en una terminal a pantalla completa. La hora se muestra con décimas. El cronómetro arranca automáticamente y se muestra únicamente en el menú, donde puedes pausarlo o reiniciarlo. La esfera tiene números del 1 al 12. En pantallas anchas el reloj queda a la izquierda y la información a la derecha; en pantallas pequeñas, la información va al pie.
+`entrypoint.sh` es solo el lanzador local de la terminal; no hay Docker ni despliegue.
+
+Al abrir, el reloj inicia en marcha automática en hora Colombia (UTC-5). Las manecillas giran en una terminal a pantalla completa. La hora se muestra con décimas. El cronómetro no arranca automáticamente: se inicia desde el menú y se muestra únicamente allí. La esfera tiene números del 1 al 12. En pantallas anchas el reloj queda a la izquierda y la información a la derecha; en pantallas pequeñas, la información va al pie.
 
 ## Controles
 
@@ -49,19 +51,3 @@ Al abrir, el reloj inicia en marcha automática en hora Colombia (UTC-5). Las ma
 El reloj sigue avanzando mientras el menú está abierto. El cronómetro se muestra y controla en el menú, no en la pantalla principal. Para terminar, cierra la pestaña o la terminal.
 
 Solo se acepta un dígito del 0 al 9. No se aceptan letras ni varios números. Cualquier otra entrada muestra un aviso. Haz clic dentro de la terminal para que el teclado funcione.
-
-## Despliegue
-
-Los siguientes archivos son de despliegue y son ajenos al código solicitado:
-
-- `Dockerfile`
-- `.dockerignore`
-- `entrypoint.sh`
-
-El despliegue usa Docker y ttyd. Nada de esto forma parte del código Python del reloj.
-
-Repositorio: https://github.com/Jenifrutica/mechanical-clock
-
-Link público: https://mechanical-clock.onrender.com
-
-Cada visitante abre su propia sesión y su propio reloj. Los cambios de un visitante no afectan a los demás. Máximo 4 sesiones simultáneas.
