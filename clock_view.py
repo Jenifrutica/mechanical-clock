@@ -39,6 +39,7 @@ class ClockCanvasApp:
         self.clock = clock
         self._use_proc_uptime = True
         self._fallback_seconds = 0.0
+        self._chronometer_started = False
         self.terminal_lines = self._read_environment_int("LINES", 24)
         self.terminal_columns = self._read_environment_int("COLUMNS", 80)
         self.size_file = self._read_environment_value("CLOCK_SIZE_FILE")
@@ -206,6 +207,9 @@ class ClockCanvasApp:
 
     def _run_auto(self):
         self.clock.start()
+        if not self._chronometer_started:
+            self.clock.chronometer.start(self._time_now())
+            self._chronometer_started = True
         print("\033[2J\033[H", end="", flush=True)
         now = self._now()
         if now is None:
@@ -283,6 +287,18 @@ class ClockCanvasApp:
         remainder = total % 60
         tenths = int((seconds - total) * 10)
         return f"{minutes:02d}:{remainder:02d}.{tenths}"
+
+    def _format_clock_time(self, data, fraction):
+        hour = 0 if data["hours"] == 12 else data["hours"]
+        total = hour * 3600 + data["minutes"] * 60 + data["seconds"] + fraction
+        total = total % 43200
+        seconds = int(total) % 60
+        minutes = (int(total) // 60) % 60
+        hours = int(total) // 3600
+        if hours == 0:
+            hours = 12
+        tenths = int((total - int(total)) * 10)
+        return f"{hours:02d}:{minutes:02d}:{seconds:02d}.{tenths}"
 
     def _angles(self, fraction):
         data = self.clock.readout()
@@ -448,7 +464,7 @@ class ClockCanvasApp:
         self._draw_separator(grid, colors)
 
         mode = "MARCHA" if data["running"] else "PAUSA"
-        time_text = f"{data['hours']:02d}:{data['minutes']:02d}:{data['seconds']:02d}"
+        time_text = self._format_clock_time(data, fraction)
         self._panel_text(grid, colors, 3, time_text, COLOR_STATUS)
         self._panel_text(grid, colors, 4, "Colombia (UTC-5)", COLOR_DIM)
         self._panel_mode(grid, colors, 6, mode, data["running"])
