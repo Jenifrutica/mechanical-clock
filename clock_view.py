@@ -1,5 +1,4 @@
 PI = 3.141592653589793
-FRAME_WIDTH = 78
 
 RESET = "\033[0m"
 COLOR_RIM = "\033[38;5;88m"
@@ -41,20 +40,22 @@ class ClockCanvasApp:
         self._use_proc_uptime = True
         self._fallback_seconds = 0.0
         self.terminal_lines = self._read_environment_int("LINES", 24)
+        self.terminal_columns = self._read_environment_int("COLUMNS", 80)
+        self.frame_width = min(78, max(40, self.terminal_columns - 1))
+        self.center_x = self.frame_width // 2
         self.full_layout = self.terminal_lines >= 40
         if self.full_layout:
             self.frame_height = 40
             self.center_y = 19
-            self.radius_x = 29
-            self.radius_y = 17
+            self.radius_x = min(29, max(10, (self.frame_width - 4) // 2))
+            self.radius_y = max(6, round(self.radius_x * 17 / 29))
             self.footer_y = 39
         else:
             self.frame_height = 24
             self.center_y = 11
-            self.radius_x = 19
-            self.radius_y = 11
+            self.radius_x = min(19, max(8, (self.frame_width - 4) // 2))
+            self.radius_y = max(4, round(self.radius_x * 11 / 19))
             self.footer_y = 23
-        self.center_x = 39
         self.top_padding = max(0, (self.terminal_lines - self.frame_height) // 2)
 
     def _read_environment_int(self, name, default):
@@ -238,14 +239,14 @@ class ClockCanvasApp:
 
     def _put_text(self, grid, colors, x, y, text, color=None):
         for character in text:
-            if 0 <= x < FRAME_WIDTH and 0 <= y < self.frame_height:
+            if 0 <= x < self.frame_width and 0 <= y < self.frame_height:
                 grid[y][x] = character
                 colors[y][x] = color
             x += 1
 
     def _centered_text(self, grid, colors, y, text, color=None):
         self._put_text(
-            grid, colors, (FRAME_WIDTH - len(text)) // 2, y, text, color
+            grid, colors, (self.frame_width - len(text)) // 2, y, text, color
         )
 
     def _draw_line(self, grid, colors, x0, y0, x1, y1, character, color):
@@ -255,7 +256,7 @@ class ClockCanvasApp:
         step_y = 1 if y0 < y1 else -1
         error = delta_x + delta_y
         while True:
-            if 0 <= x0 < FRAME_WIDTH and 0 <= y0 < self.frame_height:
+            if 0 <= x0 < self.frame_width and 0 <= y0 < self.frame_height:
                 grid[y0][x0] = character
                 colors[y0][x0] = color
             if x0 == x1 and y0 == y1:
@@ -296,7 +297,7 @@ class ClockCanvasApp:
     def _set_angle_point(self, grid, colors, angle, scale, character, color):
         x = self.center_x + round(self.radius_x * scale * _sin_deg(angle))
         y = self.center_y - round(self.radius_y * scale * _cos_deg(angle))
-        if 0 <= x < FRAME_WIDTH and 0 <= y < self.frame_height:
+        if 0 <= x < self.frame_width and 0 <= y < self.frame_height:
             grid[y][x] = character
             colors[y][x] = color
 
@@ -338,8 +339,8 @@ class ClockCanvasApp:
         colors[self.center_y][self.center_x] = COLOR_CENTER
 
     def _build_grid(self, fraction):
-        grid = [[" "] * FRAME_WIDTH for _ in range(self.frame_height)]
-        colors = [[None] * FRAME_WIDTH for _ in range(self.frame_height)]
+        grid = [[" "] * self.frame_width for _ in range(self.frame_height)]
+        colors = [[None] * self.frame_width for _ in range(self.frame_height)]
         data = self.clock.readout()
         second_angle, minute_angle, hour_angle, second_position, minute_position, hour_position = (
             self._angles(fraction)
@@ -350,12 +351,12 @@ class ClockCanvasApp:
         mode = "MARCHA" if data["running"] else "PAUSA"
         time_text = f"{data['hours']:02d}:{data['minutes']:02d}:{data['seconds']:02d}"
         footer = (
-            f"{time_text}  Colombia  {mode}  |  "
-            f"S {round(second_angle)}°  M {round(minute_angle)}°  H {round(hour_angle)}°  |  "
-            "Ctrl+C menú"
+            f"{time_text} Colombia {mode} | "
+            f"S {round(second_angle)}° M {round(minute_angle)}° H {round(hour_angle)}° | "
+            "Ctrl+C"
         )
         self._centered_text(grid, colors, self.footer_y, footer, COLOR_DIM)
-        footer_x = (FRAME_WIDTH - len(footer)) // 2
+        footer_x = (self.frame_width - len(footer)) // 2
         mode_x = footer_x + footer.index(mode)
         self._put_text(
             grid,
@@ -368,8 +369,8 @@ class ClockCanvasApp:
         return grid, colors
 
     def _render_menu(self):
-        grid = [[" "] * FRAME_WIDTH for _ in range(self.frame_height)]
-        colors = [[None] * FRAME_WIDTH for _ in range(self.frame_height)]
+        grid = [[" "] * self.frame_width for _ in range(self.frame_height)]
+        colors = [[None] * self.frame_width for _ in range(self.frame_height)]
         data = self.clock.readout()
         second_angle, minute_angle, hour_angle, _, _, _ = self._angles(0.0)
         mode = "MARCHA" if data["running"] else "PAUSA"
@@ -390,7 +391,7 @@ class ClockCanvasApp:
 
         status = f"HORA {time_text}    COLOMBIA (UTC-5)    MODO {mode}"
         self._centered_text(grid, colors, status_y, status, COLOR_STATUS)
-        status_x = (FRAME_WIDTH - len(status)) // 2
+        status_x = (self.frame_width - len(status)) // 2
         self._put_text(
             grid,
             colors,
@@ -462,7 +463,7 @@ class ClockCanvasApp:
         for y in range(self.frame_height):
             parts = []
             current_color = None
-            for x in range(FRAME_WIDTH):
+            for x in range(self.frame_width):
                 color = colors[y][x]
                 if color != current_color:
                     if current_color is not None:
@@ -480,7 +481,7 @@ class ClockCanvasApp:
         prefix = "\033[2J\033[H" if clear else "\033[H"
         if self.top_padding:
             rows = [""] * self.top_padding + list(rows)
-        text = prefix + "\n".join(rows)
+        text = prefix + "\n".join(row + "\033[K" for row in rows)
         if newline:
             text += "\n"
         text += "\033[J"
