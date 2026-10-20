@@ -496,7 +496,6 @@ class ClockCanvasApp:
         self._panel_text(grid, colors, 24, "4/5  ±10min", COLOR_DIM)
         self._panel_text(grid, colors, 25, "6  reiniciar reloj", COLOR_DIM)
         self._panel_text(grid, colors, 26, "8  hora actual", COLOR_DIM)
-        self._panel_text(grid, colors, 28, "Clic en la terminal", COLOR_DIM)
         return grid, colors
 
     def _render_side_menu(self, fraction):
@@ -546,7 +545,6 @@ class ClockCanvasApp:
             COLOR_DIM,
         )
         self._panel_text(grid, colors, 28, "La hora sigue avanzando", COLOR_DIM)
-        self._panel_text(grid, colors, 30, "Clic en la terminal", COLOR_DIM)
         return self._rows(grid, colors)[: self.frame_height - 1]
 
     def _build_grid(self, fraction):
