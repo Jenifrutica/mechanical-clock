@@ -24,18 +24,18 @@ Al abrir, el reloj inicia en marcha automática en hora Colombia (UTC-5). Las ma
 
 ## Controles
 
-- `Ctrl+C`: pausar y abrir el menú.
-- `Enter` o `1` + `Enter`: iniciar o reanudar la marcha.
+- `Ctrl+C`: abrir o cerrar el menú, sin pausar el reloj.
+- `1`: volver al reloj.
 - `2`: avanzar 1 segundo.
 - `3`: retroceder 1 segundo.
 - `4`: avanzar 10 minutos.
 - `5`: retroceder 10 minutos.
 - `6`: reiniciar a `12:00:00`.
 - `7`: redibujar.
-- `8`: volver a la hora actual y reanudar.
-- `9`: iniciar o pausar el cronómetro.
-- `10`: reiniciar el cronómetro.
-- `11`: salir.
+- `8`: volver a la hora actual.
+- `9`: salir.
+
+El reloj sigue avanzando mientras el menú está abierto. El cronómetro arranca automáticamente y se muestra solo en la pantalla principal.
 
 Escribe el número y presiona `Enter`. Haz clic dentro de la terminal para que el teclado funcione.
 

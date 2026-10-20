@@ -40,6 +40,11 @@ class ClockCanvasApp:
         self._use_proc_uptime = True
         self._fallback_seconds = 0.0
         self._chronometer_started = False
+        self.cmd_file = self._read_environment_value("CLOCK_CMD_FILE")
+        self._cmd_offset = 0
+        self.menu_mode = False
+        self.exit_requested = False
+        self._menu_prompt_ready = False
         self.terminal_lines = self._read_environment_int("LINES", 24)
         self.terminal_columns = self._read_environment_int("COLUMNS", 80)
         self.size_file = self._read_environment_value("CLOCK_SIZE_FILE")
@@ -127,23 +132,90 @@ class ClockCanvasApp:
         self._enter_screen()
         try:
             self._synchronize_clock()
-            while True:
-                try:
-                    self._run_auto()
-                except KeyboardInterrupt:
-                    self.clock.pause()
-                    try:
-                        action = self._show_menu()
-                    except KeyboardInterrupt:
-                        break
-                    if action == 11:
-                        break
+            self.clock.start()
+            if not self._chronometer_started:
+                self.clock.chronometer.start(self._time_now())
+                self._chronometer_started = True
+            self._run_loop()
         except KeyboardInterrupt:
-            pass
-        except EOFError:
             pass
         finally:
             self._leave_screen()
+
+    def _run_loop(self):
+        print("\033[2J\033[H", end="", flush=True)
+        now = self._time_now()
+        epoch = self._read_epoch()
+        if epoch is not None:
+            next_tick = now + (1.0 - (epoch - int(epoch)))
+        else:
+            next_tick = now + 1.0
+        if next_tick <= now:
+            next_tick = now + 1.0
+        while not self.exit_requested:
+            try:
+                now = self._time_now()
+                while now >= next_tick:
+                    self.clock.tick_forward()
+                    next_tick += 1.0
+                if self._refresh_terminal_size():
+                    print("\033[2J\033[H", end="", flush=True)
+                self._process_commands()
+                fraction = now - (next_tick - 1.0)
+                if fraction < 0.0:
+                    fraction = 0.0
+                elif fraction > 1.0:
+                    fraction = 1.0
+                if self.menu_mode:
+                    self._render_menu(fraction)
+                else:
+                    self._render_auto(fraction)
+                self._wait_until(now + 0.1)
+            except KeyboardInterrupt:
+                self.menu_mode = not self.menu_mode
+                self._menu_prompt_ready = False
+                print("\033[2J\033[H", end="", flush=True)
+
+    def _process_commands(self):
+        if not self.cmd_file:
+            return
+        try:
+            with open(self.cmd_file, "r") as file:
+                file.seek(self._cmd_offset)
+                data = file.read()
+                self._cmd_offset = file.tell()
+        except OSError:
+            return
+        if not self.menu_mode:
+            return
+        for line in data.splitlines():
+            self._handle_command(line.strip())
+            self._menu_prompt_ready = False
+            if self.exit_requested or not self.menu_mode:
+                break
+
+    def _handle_command(self, choice):
+        if choice == "" or choice == "1":
+            self.menu_mode = False
+            self.clock.start()
+        elif choice == "2":
+            self.clock.tick_forward()
+        elif choice == "3":
+            self.clock.tick_backward()
+        elif choice == "4":
+            self.clock.fast_adjust_minutes(10)
+        elif choice == "5":
+            self.clock.fast_adjust_minutes(-10)
+        elif choice == "6":
+            self.clock.reset_midnight()
+        elif choice == "7":
+            pass
+        elif choice == "8":
+            self._synchronize_clock()
+            self.clock.start()
+            self.menu_mode = False
+        elif choice == "9":
+            self.exit_requested = True
 
     def _enter_screen(self):
         print(
@@ -508,27 +580,23 @@ class ClockCanvasApp:
         self._panel_text(grid, colors, 30, "Clic en la terminal", COLOR_DIM)
         return grid, colors
 
-    def _render_side_menu(self):
+    def _render_side_menu(self, fraction):
         grid = [[" "] * self.frame_width for _ in range(self.frame_height)]
         colors = [[None] * self.frame_width for _ in range(self.frame_height)]
         data = self.clock.readout()
-        second_angle, minute_angle, hour_angle, _, _, _ = self._angles(0.0)
-        mode = "MARCHA" if data["running"] else "PAUSA"
-        time_text = f"{data['hours']:02d}:{data['minutes']:02d}:{data['seconds']:02d}"
-        self._draw_dial(
-            grid,
-            colors,
-            self._angles(0.0)[3],
-            self._angles(0.0)[4],
-            self._angles(0.0)[5],
+        second_angle, minute_angle, hour_angle, second_position, minute_position, hour_position = (
+            self._angles(fraction)
         )
+        self._draw_dial(grid, colors, second_position, minute_position, hour_position)
         self._draw_separator(grid, colors)
+        mode = "MARCHA" if data["running"] else "PAUSA"
+        time_text = self._format_clock_time(data, fraction)
         self._panel_text(grid, colors, 3, f"HORA {time_text}", COLOR_STATUS)
         self._panel_text(grid, colors, 4, "Colombia (UTC-5)", COLOR_DIM)
         self._panel_mode(grid, colors, 5, mode, data["running"])
         self._panel_text(grid, colors, 7, "MENÚ", COLOR_SECOND)
         options = (
-            "1 Iniciar/Reanudar",
+            "1 Volver al reloj",
             "2 +1s",
             "3 -1s",
             "4 +10min",
@@ -536,38 +604,22 @@ class ClockCanvasApp:
             "6 Reiniciar reloj",
             "7 Redibujar",
             "8 Hora actual",
-            "9 Cronómetro iniciar/pausar",
-            "10 Cronómetro reiniciar",
-            "11 Salir",
+            "9 Salir",
         )
         for offset, option in enumerate(options):
             self._panel_text(grid, colors, 9 + offset, option, COLOR_STATUS)
-        self._panel_text(grid, colors, 21, "Escribe el número", COLOR_DIM)
-        self._panel_text(grid, colors, 22, "y pulsa ENTER", COLOR_DIM)
-        chrono_now = self._time_now()
-        chrono_value = self.clock.chronometer.value(chrono_now)
-        if self.clock.chronometer.running() or chrono_value > 0.0:
-            chrono_state = "▶" if self.clock.chronometer.running() else "⏸"
-            self._panel_text(
-                grid, colors, 24, f"CRONÓMETRO {chrono_state}", COLOR_SECOND
-            )
-            self._panel_text(
-                grid,
-                colors,
-                25,
-                self._format_chronometer(chrono_value),
-                COLOR_STATUS,
-            )
-        self._panel_text(grid, colors, 27, "ENTER solo = iniciar", COLOR_DIM)
+        self._panel_text(grid, colors, 19, "Escribe el número", COLOR_DIM)
+        self._panel_text(grid, colors, 20, "y pulsa ENTER", COLOR_DIM)
         self._panel_text(
-            grid, colors, 29, f"SEG {round(second_angle)}°  MIN {round(minute_angle)}°  HORA {round(hour_angle)}°", COLOR_DIM
+            grid,
+            colors,
+            22,
+            f"SEG {round(second_angle)}°  MIN {round(minute_angle)}°  HORA {round(hour_angle)}°",
+            COLOR_DIM,
         )
-        self._panel_text(grid, colors, 31, "Clic en la terminal", COLOR_DIM)
-        self._write_frame(
-            self._rows(grid, colors)[:self.frame_height - 1],
-            clear=True,
-            newline=True,
-        )
+        self._panel_text(grid, colors, 25, "La hora sigue avanzando", COLOR_DIM)
+        self._panel_text(grid, colors, 27, "Clic en la terminal", COLOR_DIM)
+        return self._rows(grid, colors)[: self.frame_height - 1]
 
     def _build_grid(self, fraction):
         if self.side_layout:
@@ -601,24 +653,40 @@ class ClockCanvasApp:
         )
         return grid, colors
 
-    def _render_menu(self):
-        self._refresh_terminal_size()
+    def _write_menu_frame(self, rows):
+        content = [""] * self.top_padding + list(rows)
+        body = "\n".join(row + "\033[K" for row in content)
+        if not self._menu_prompt_ready:
+            print(
+                "\033[?1049h\033[2J\033[H"
+                + body
+                + "\nOpción (1-9): ",
+                end="",
+                flush=True,
+            )
+            self._menu_prompt_ready = True
+        else:
+            print("\0337\033[H" + body + "\0338", end="", flush=True)
+
+    def _render_menu(self, fraction):
+        if self._refresh_terminal_size():
+            self._menu_prompt_ready = False
         if self.side_layout:
-            self._render_side_menu()
+            self._write_menu_frame(self._render_side_menu(fraction))
             return
         grid = [[" "] * self.frame_width for _ in range(self.frame_height)]
         colors = [[None] * self.frame_width for _ in range(self.frame_height)]
         data = self.clock.readout()
-        second_angle, minute_angle, hour_angle, _, _, _ = self._angles(0.0)
+        second_angle, minute_angle, hour_angle, _, _, _ = self._angles(fraction)
         mode = "MARCHA" if data["running"] else "PAUSA"
-        time_text = f"{data['hours']:02d}:{data['minutes']:02d}:{data['seconds']:02d}"
+        time_text = self._format_clock_time(data, fraction)
 
         if self.full_layout:
             status_y = 9
             angles_y = 10
             title_y = 13
             first_option_y = 15
-            instruction_y = 27
+            instruction_y = 26
         else:
             status_y = 5
             angles_y = 6
@@ -648,7 +716,7 @@ class ClockCanvasApp:
 
         if self.full_layout:
             options = (
-                "1 Iniciar/Reanudar",
+                "1 Volver al reloj",
                 "2 +1s",
                 "3 -1s",
                 "4 +10min",
@@ -656,9 +724,7 @@ class ClockCanvasApp:
                 "6 Reiniciar reloj",
                 "7 Redibujar",
                 "8 Hora actual",
-                "9 Cronómetro iniciar/pausar",
-                "10 Cronómetro reiniciar",
-                "11 Salir",
+                "9 Salir",
             )
             for offset, option in enumerate(options):
                 self._centered_text(
@@ -666,13 +732,12 @@ class ClockCanvasApp:
                 )
         else:
             options = (
-                "1 Iniciar/Reanudar",
+                "1 Volver al reloj",
                 "2 +1s        3 -1s",
                 "4 +10min     5 -10min",
                 "6 Reiniciar reloj",
                 "7 Redibujar   8 Hora actual",
-                "9 Cronómetro  10 Reset",
-                "11 Salir",
+                "9 Salir",
             )
             for offset, option in enumerate(options):
                 self._centered_text(
@@ -690,14 +755,10 @@ class ClockCanvasApp:
             grid,
             colors,
             instruction_y + 1,
-            "ENTER solo = iniciar/reanudar",
+            "La hora sigue avanzando",
             COLOR_DIM,
         )
-        self._write_frame(
-            self._rows(grid, colors)[:self.frame_height - 1],
-            clear=True,
-            newline=True,
-        )
+        self._write_menu_frame(self._rows(grid, colors)[:self.frame_height - 1])
 
     def _rows(self, grid, colors):
         rows = []
