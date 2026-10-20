@@ -25,15 +25,18 @@ CENTER_X = 39
 CENTER_Y = 9
 
 RESET = "\033[0m"
-COLOR_TITLE = "\033[1;36m"
-COLOR_RIM = "\033[1;36m"
-COLOR_TICK = "\033[2;37m"
-COLOR_MAJOR = "\033[1;37m"
-COLOR_HOUR = "\033[1;37m"
-COLOR_MINUTE = "\033[1;33m"
-COLOR_SECOND = "\033[1;31m"
-COLOR_CENTER = "\033[1;31m"
-COLOR_NUMBERS = ("\033[1;31m", "\033[1;33m", "\033[1;34m", "\033[1;36m")
+COLOR_TITLE = "\033[38;5;196m"
+COLOR_RIM = "\033[38;5;88m"
+COLOR_TICK = "\033[38;5;240m"
+COLOR_MAJOR = "\033[38;5;250m"
+COLOR_HOUR = "\033[97m"
+COLOR_MINUTE = "\033[37m"
+COLOR_SECOND = "\033[38;5;196m"
+COLOR_CENTER = "\033[38;5;196m"
+COLOR_CARDINAL = "\033[38;5;196m"
+COLOR_STATUS = "\033[97m"
+COLOR_DIM = "\033[38;5;245m"
+COLOR_NUMBERS = ("\033[97m", "\033[37m", "\033[38;5;250m")
 
 
 class ClockCanvasApp:
@@ -48,12 +51,15 @@ class ClockCanvasApp:
             self._synchronize_clock()
             while True:
                 try:
-                    action = self._show_menu()
-                    if action == 8:
-                        break
                     self._run_auto()
                 except KeyboardInterrupt:
                     self.clock.pause()
+                    try:
+                        action = self._show_menu()
+                    except KeyboardInterrupt:
+                        break
+                    if action == 8:
+                        break
         except KeyboardInterrupt:
             pass
         except EOFError:
@@ -154,10 +160,10 @@ class ClockCanvasApp:
         while True:
             self._render_menu()
             try:
-                choice = input("Opción: ").strip()
+                choice = input("Opción (Enter = iniciar): ").strip()
             except EOFError:
                 return 8
-            if choice == "1":
+            if choice == "" or choice == "1":
                 return 1
             if choice == "2":
                 self.clock.tick_forward()
@@ -294,14 +300,11 @@ class ClockCanvasApp:
             label = str(value)
             if len(label) == 2:
                 x -= 1
-            self._put_text(
-                grid,
-                colors,
-                x,
-                y,
-                label,
-                COLOR_NUMBERS[index % len(COLOR_NUMBERS)],
-            )
+            if value in (12, 3, 6, 9):
+                number_color = COLOR_CARDINAL
+            else:
+                number_color = COLOR_NUMBERS[index % len(COLOR_NUMBERS)]
+            self._put_text(grid, colors, x, y, label, number_color)
 
         grid[CENTER_Y][CENTER_X] = "●"
         colors[CENTER_Y][CENTER_X] = COLOR_CENTER
@@ -331,15 +334,16 @@ class ClockCanvasApp:
             colors,
             2,
             18,
-            f"HORA {data['hours']:02d}:{data['minutes']:02d}:{data['seconds']:02d}    MODO {mode}",
-            COLOR_MAJOR,
+            f"HORA {data['hours']:02d}:{data['minutes']:02d}:{data['seconds']:02d}    COLOMBIA (UTC-5)    MODO {mode}",
+            COLOR_STATUS,
         )
         self._put_text(
             grid,
             colors,
             2,
             19,
-            f"SEG {second_angle:6.1f}°   MIN {minute_angle:6.1f}°   HORA {hour_angle:6.1f}°   |   Colombia (UTC-5)",
+            f"ÁNGULOS: SEG {second_angle:6.1f}°   MIN {minute_angle:6.1f}°   HORA {hour_angle:6.1f}°",
+            COLOR_DIM,
         )
 
         if menu_mode:
@@ -348,8 +352,8 @@ class ClockCanvasApp:
                 colors,
                 2,
                 20,
-                "1 Iniciar/Reanudar   2 +1s   3 -1s   4 +10min",
-                COLOR_MAJOR,
+                "1 Iniciar/Reanudar (o Enter)   2 +1s   3 -1s   4 +10min",
+                COLOR_STATUS,
             )
             self._put_text(
                 grid,
@@ -357,7 +361,7 @@ class ClockCanvasApp:
                 2,
                 21,
                 "5 -10min   6 Reiniciar   7 Redibujar   8 Salir",
-                COLOR_MAJOR,
+                COLOR_STATUS,
             )
         else:
             self._put_text(
@@ -366,6 +370,7 @@ class ClockCanvasApp:
                 2,
                 20,
                 "Pistas 60 / 60 / 12 marcas | Acarreo Segundero -> Minutero -> Horario",
+                COLOR_DIM,
             )
             self._put_text(
                 grid,
@@ -373,21 +378,23 @@ class ClockCanvasApp:
                 2,
                 21,
                 "Ctrl+C: pausar y abrir el menú",
-                COLOR_MAJOR,
+                COLOR_SECOND,
             )
             self._put_text(
                 grid,
                 colors,
                 2,
                 22,
-                "Menú: 1 Iniciar/Pausar  2/3 +/-1s  4/5 +/-10min",
+                "Luego escribe 2-8 y pulsa ENTER | 1 o Enter reanuda",
+                COLOR_STATUS,
             )
             self._put_text(
                 grid,
                 colors,
                 2,
                 23,
-                "6 Reiniciar  7 Redibujar  8 Salir | Haz clic en la terminal",
+                "Haz clic dentro de la terminal para usar el teclado",
+                COLOR_DIM,
             )
         return grid, colors
 

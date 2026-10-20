@@ -20,12 +20,12 @@ Archivos:
 python3 main.py
 ```
 
-Al abrir se muestra el reloj en hora Colombia (UTC-5) y el menú. Escribe `1` y presiona `Enter` para iniciar la marcha automática. Las manecillas giran en una terminal a pantalla completa.
+Al abrir, el reloj inicia en marcha automática en hora Colombia (UTC-5). Las manecillas giran en una terminal a pantalla completa.
 
 ## Controles
 
 - `Ctrl+C`: pausar y abrir el menú.
-- `1` + `Enter`: iniciar o reanudar la marcha.
+- `Enter` o `1` + `Enter`: iniciar o reanudar la marcha.
 - `2`: avanzar 1 segundo.
 - `3`: retroceder 1 segundo.
 - `4`: avanzar 10 minutos.
