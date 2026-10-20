@@ -1,31 +1,32 @@
 CIRCLE_POINTS = (
-    (0, -8), (1, -8), (3, -8), (4, -8), (6, -7), (7, -7), (8, -6), (9, -6), (10, -5), (11, -5),
-    (12, -4), (13, -3), (13, -2), (14, -2), (14, -1), (14, 0), (14, 1), (14, 2), (13, 2), (13, 3),
-    (12, 4), (11, 5), (10, 5), (9, 6), (8, 6), (7, 7), (6, 7), (4, 8), (3, 8), (1, 8),
-    (0, 8), (-1, 8), (-3, 8), (-4, 8), (-6, 7), (-7, 7), (-8, 6), (-9, 6), (-10, 5), (-11, 5),
-    (-12, 4), (-13, 3), (-13, 2), (-14, 2), (-14, 1), (-14, 0), (-14, -1), (-14, -2), (-13, -2), (-13, -3),
-    (-12, -4), (-11, -5), (-10, -5), (-9, -6), (-8, -6), (-7, -7), (-6, -7), (-4, -8), (-3, -8), (-1, -8),
+    (0, -10), (2, -10), (4, -10), (6, -10), (7, -9), (9, -9), (11, -8), (12, -7), (13, -7), (15, -6),
+    (16, -5), (16, -4), (17, -3), (18, -2), (18, -1), (18, 0), (18, 1), (18, 2), (17, 3), (16, 4),
+    (16, 5), (15, 6), (13, 7), (12, 7), (11, 8), (9, 9), (7, 9), (6, 10), (4, 10), (2, 10),
+    (0, 10), (-2, 10), (-4, 10), (-6, 10), (-7, 9), (-9, 9), (-11, 8), (-12, 7), (-13, 7), (-15, 6),
+    (-16, 5), (-16, 4), (-17, 3), (-18, 2), (-18, 1), (-18, 0), (-18, -1), (-18, -2), (-17, -3), (-16, -4),
+    (-16, -5), (-15, -6), (-13, -7), (-12, -7), (-11, -8), (-9, -9), (-7, -9), (-6, -10), (-4, -10), (-2, -10),
 )
 
 RIM_POINTS = (
-    (0, -8), (1, -8), (2, -8), (3, -8), (4, -8), (5, -7), (6, -7), (7, -7), (8, -7), (8, -6),
-    (9, -6), (10, -6), (10, -5), (11, -5), (12, -4), (13, -3), (13, -2), (14, -2), (14, -1), (14, 0),
-    (14, 1), (14, 2), (13, 2), (13, 3), (12, 4), (11, 5), (10, 5), (10, 6), (9, 6), (8, 6),
-    (8, 7), (7, 7), (6, 7), (5, 7), (4, 8), (3, 8), (2, 8), (1, 8), (0, 8), (-1, 8),
-    (-2, 8), (-3, 8), (-4, 8), (-5, 7), (-6, 7), (-7, 7), (-8, 7), (-8, 6), (-9, 6), (-10, 6),
-    (-10, 5), (-11, 5), (-12, 4), (-13, 3), (-13, 2), (-14, 2), (-14, 1), (-14, 0), (-14, -1), (-14, -2),
-    (-13, -2), (-13, -3), (-12, -4), (-11, -5), (-10, -5), (-10, -6), (-9, -6), (-8, -6), (-8, -7), (-7, -7),
-    (-6, -7), (-5, -7), (-4, -8), (-3, -8), (-2, -8), (-1, -8),
+    (0, -10), (1, -10), (2, -10), (3, -10), (4, -10), (5, -10), (6, -10), (6, -9), (7, -9), (8, -9),
+    (9, -9), (10, -8), (11, -8), (12, -8), (12, -7), (13, -7), (14, -6), (15, -6), (15, -5), (16, -5),
+    (16, -4), (17, -4), (17, -3), (18, -2), (18, -1), (18, 0), (18, 1), (18, 2), (17, 3), (17, 4),
+    (16, 4), (16, 5), (15, 5), (15, 6), (14, 6), (13, 7), (12, 7), (12, 8), (11, 8), (10, 8),
+    (9, 9), (8, 9), (7, 9), (6, 9), (6, 10), (5, 10), (4, 10), (3, 10), (2, 10), (1, 10),
+    (0, 10), (-1, 10), (-2, 10), (-3, 10), (-4, 10), (-5, 10), (-6, 10), (-6, 9), (-7, 9), (-8, 9),
+    (-9, 9), (-10, 8), (-11, 8), (-12, 8), (-12, 7), (-13, 7), (-14, 6), (-15, 6), (-15, 5), (-16, 5),
+    (-16, 4), (-17, 4), (-17, 3), (-18, 2), (-18, 1), (-18, 0), (-18, -1), (-18, -2), (-17, -3), (-17, -4),
+    (-16, -4), (-16, -5), (-15, -5), (-15, -6), (-14, -6), (-13, -7), (-12, -7), (-12, -8), (-11, -8), (-10, -8),
+    (-9, -9), (-8, -9), (-7, -9), (-6, -9), (-6, -10), (-5, -10), (-4, -10), (-3, -10), (-2, -10), (-1, -10),
 )
 
 COLOMBIA_OFFSET_SECONDS = -5 * 3600
 FRAME_WIDTH = 78
 FRAME_HEIGHT = 24
 CENTER_X = 39
-CENTER_Y = 9
+CENTER_Y = 10
 
 RESET = "\033[0m"
-COLOR_TITLE = "\033[38;5;196m"
 COLOR_RIM = "\033[38;5;88m"
 COLOR_TICK = "\033[38;5;240m"
 COLOR_MAJOR = "\033[38;5;250m"
@@ -33,10 +34,8 @@ COLOR_HOUR = "\033[97m"
 COLOR_MINUTE = "\033[37m"
 COLOR_SECOND = "\033[38;5;196m"
 COLOR_CENTER = "\033[38;5;196m"
-COLOR_CARDINAL = "\033[38;5;196m"
 COLOR_STATUS = "\033[97m"
 COLOR_DIM = "\033[38;5;245m"
-COLOR_NUMBERS = ("\033[97m", "\033[37m", "\033[38;5;250m")
 
 
 class ClockCanvasApp:
@@ -69,7 +68,7 @@ class ClockCanvasApp:
 
     def _enter_screen(self):
         print(
-            "\033[?1049h\033[2J\033[H\033[?25l\033]0;Reloj Mecanico\007",
+            "\033[?1049h\033[2J\033[H\033[?25l\033]0;Reloj\007",
             end="",
             flush=True,
         )
@@ -283,31 +282,22 @@ class ClockCanvasApp:
                 self._set_point(grid, colors, point, 0.90, "·", COLOR_TICK)
 
         self._draw_hand(
-            grid, colors, hour_position, 0.56, "█", COLOR_HOUR, 2
+            grid, colors, hour_position, 0.55, "█", COLOR_HOUR, 2
         )
         self._draw_hand(
-            grid, colors, minute_position, 0.80, "▓", COLOR_MINUTE, 1
+            grid, colors, minute_position, 0.78, "▓", COLOR_MINUTE, 1
         )
         self._draw_hand(
             grid, colors, second_position, 0.97, "·", COLOR_SECOND, 1
         )
 
-        for index in range(12):
-            value = 12 if index == 0 else index
-            point = CIRCLE_POINTS[index * 5]
-            x = CENTER_X + round(point[0] * 0.78)
-            y = CENTER_Y + round(point[1] * 0.78)
-            label = str(value)
-            if len(label) == 2:
-                x -= 1
-            if value in (12, 3, 6, 9):
-                number_color = COLOR_CARDINAL
-            else:
-                number_color = COLOR_NUMBERS[index % len(COLOR_NUMBERS)]
-            self._put_text(grid, colors, x, y, label, number_color)
-
         grid[CENTER_Y][CENTER_X] = "●"
         colors[CENTER_Y][CENTER_X] = COLOR_CENTER
+
+    def _centered_text(self, grid, colors, y, text, color=None):
+        self._put_text(
+            grid, colors, (FRAME_WIDTH - len(text)) // 2, y, text, color
+        )
 
     def _build_grid(self, fraction, menu_mode):
         grid = [[" "] * FRAME_WIDTH for _ in range(FRAME_HEIGHT)]
@@ -317,83 +307,49 @@ class ClockCanvasApp:
             self._angles(fraction)
         )
 
-        title = "RELOJ ANALÓGICO MECÁNICO"
-        self._put_text(
-            grid,
-            colors,
-            (FRAME_WIDTH - len(title)) // 2,
-            0,
-            title,
-            COLOR_TITLE,
-        )
         self._draw_dial(grid, colors, second_position, minute_position, hour_position)
 
         mode = "MARCHA" if data["running"] else "PAUSA"
-        self._put_text(
-            grid,
-            colors,
-            2,
-            18,
-            f"HORA {data['hours']:02d}:{data['minutes']:02d}:{data['seconds']:02d}    COLOMBIA (UTC-5)    MODO {mode}",
-            COLOR_STATUS,
-        )
-        self._put_text(
-            grid,
-            colors,
-            2,
-            19,
-            f"ÁNGULOS: SEG {second_angle:6.1f}°   MIN {minute_angle:6.1f}°   HORA {hour_angle:6.1f}°",
-            COLOR_DIM,
-        )
-
         if menu_mode:
-            self._put_text(
+            self._centered_text(
                 grid,
                 colors,
-                2,
-                20,
-                "1 Iniciar/Reanudar (o Enter)   2 +1s   3 -1s   4 +10min",
+                21,
+                "1 Iniciar/Reanudar   2 +1s   3 -1s   4 +10min",
                 COLOR_STATUS,
             )
-            self._put_text(
+            self._centered_text(
                 grid,
                 colors,
-                2,
-                21,
+                22,
                 "5 -10min   6 Reiniciar   7 Redibujar   8 Salir",
                 COLOR_STATUS,
             )
         else:
+            time_text = f"{data['hours']:02d}:{data['minutes']:02d}:{data['seconds']:02d}"
+            line = f"HORA {time_text}    COLOMBIA (UTC-5)    MODO "
+            x = (FRAME_WIDTH - (len(line) + len(mode))) // 2
+            self._put_text(grid, colors, x, 21, line, COLOR_STATUS)
             self._put_text(
                 grid,
                 colors,
-                2,
-                20,
-                "Pistas 60 / 60 / 12 marcas | Acarreo Segundero -> Minutero -> Horario",
+                x + len(line),
+                21,
+                mode,
+                COLOR_SECOND if data["running"] else COLOR_DIM,
+            )
+            self._centered_text(
+                grid,
+                colors,
+                22,
+                f"SEG {second_angle:5.1f}°    MIN {minute_angle:5.1f}°    HORA {hour_angle:5.1f}°",
                 COLOR_DIM,
             )
-            self._put_text(
+            self._centered_text(
                 grid,
                 colors,
-                2,
-                21,
-                "Ctrl+C: pausar y abrir el menú",
-                COLOR_SECOND,
-            )
-            self._put_text(
-                grid,
-                colors,
-                2,
-                22,
-                "Luego escribe 2-8 y pulsa ENTER | 1 o Enter reanuda",
-                COLOR_STATUS,
-            )
-            self._put_text(
-                grid,
-                colors,
-                2,
                 23,
-                "Haz clic dentro de la terminal para usar el teclado",
+                "Ctrl+C: menú    Enter: reanudar    Clic en la terminal",
                 COLOR_DIM,
             )
         return grid, colors
@@ -430,4 +386,4 @@ class ClockCanvasApp:
 
     def _render_menu(self):
         grid, colors = self._build_grid(0.0, True)
-        self._write_frame(self._rows(grid, colors)[:22], clear=True, newline=True)
+        self._write_frame(self._rows(grid, colors)[:23], clear=True, newline=True)
