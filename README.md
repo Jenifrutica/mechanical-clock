@@ -47,4 +47,4 @@ Repositorio: https://github.com/Jenifrutica/mechanical-clock
 
 Link público: https://PENDIENTE-DE-RENDER
 
-Cada visitante abre su propia sesión y su propio reloj. Los cambios de un visitante no afectan a los demás.
+Cada visitante abre su propia sesión y su propio reloj. Los cambios de un visitante no afectan a los demás. Máximo 4 sesiones simultáneas.
