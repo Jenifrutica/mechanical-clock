@@ -329,27 +329,20 @@ class ClockCanvasApp:
             time_text = f"{data['hours']:02d}:{data['minutes']:02d}:{data['seconds']:02d}"
             line = f"HORA {time_text}    COLOMBIA (UTC-5)    MODO "
             x = (FRAME_WIDTH - (len(line) + len(mode))) // 2
-            self._put_text(grid, colors, x, 21, line, COLOR_STATUS)
+            self._put_text(grid, colors, x, 22, line, COLOR_STATUS)
             self._put_text(
                 grid,
                 colors,
                 x + len(line),
-                21,
+                22,
                 mode,
                 COLOR_SECOND if data["running"] else COLOR_DIM,
             )
             self._centered_text(
                 grid,
                 colors,
-                22,
-                f"SEG {second_angle:5.1f}°    MIN {minute_angle:5.1f}°    HORA {hour_angle:5.1f}°",
-                COLOR_DIM,
-            )
-            self._centered_text(
-                grid,
-                colors,
                 23,
-                "Ctrl+C: menú    Enter: reanudar    Clic en la terminal",
+                f"SEG {second_angle:5.1f}°   MIN {minute_angle:5.1f}°   HORA {hour_angle:5.1f}°   |   Ctrl+C menú   |   Enter reanudar",
                 COLOR_DIM,
             )
         return grid, colors
@@ -378,6 +371,7 @@ class ClockCanvasApp:
         text = prefix + "\n".join(rows)
         if newline:
             text += "\n"
+        text += "\033[J"
         print(text, end="", flush=True)
 
     def _render_auto(self, fraction):
