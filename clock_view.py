@@ -39,7 +39,6 @@ class ClockCanvasApp:
         self.clock = clock
         self._use_proc_uptime = True
         self._fallback_seconds = 0.0
-        self._chronometer_started = False
         self.cmd_file = self._read_environment_value("CLOCK_CMD_FILE")
         self._cmd_offset = 0
         self.menu_mode = False
@@ -133,9 +132,6 @@ class ClockCanvasApp:
         try:
             self._synchronize_clock()
             self.clock.start()
-            if not self._chronometer_started:
-                self.clock.chronometer.start(self._time_now())
-                self._chronometer_started = True
             self._run_loop()
         except KeyboardInterrupt:
             pass
@@ -223,8 +219,6 @@ class ClockCanvasApp:
             self.clock.chronometer.toggle(self._time_now())
         elif choice == "10":
             self.clock.chronometer.reset()
-        elif choice == "11":
-            self.exit_requested = True
 
     def _enter_screen(self):
         print(
@@ -285,76 +279,6 @@ class ClockCanvasApp:
                 return
             for _ in range(2000):
                 pass
-
-    def _run_auto(self):
-        self.clock.start()
-        if not self._chronometer_started:
-            self.clock.chronometer.start(self._time_now())
-            self._chronometer_started = True
-        print("\033[2J\033[H", end="", flush=True)
-        now = self._now()
-        if now is None:
-            now = self._fallback_seconds
-        epoch = self._read_epoch()
-        if epoch is not None:
-            next_tick = now + (1.0 - (epoch - int(epoch)))
-        else:
-            next_tick = now + 1.0
-        if next_tick <= now:
-            next_tick = now + 1.0
-        while True:
-            now = self._now()
-            if now is None:
-                self._fallback_seconds += 0.1
-                now = self._fallback_seconds
-            while now >= next_tick:
-                self.clock.tick_forward()
-                next_tick += 1.0
-            fraction = now - (next_tick - 1.0)
-            if fraction < 0.0:
-                fraction = 0.0
-            elif fraction > 1.0:
-                fraction = 1.0
-            if self._refresh_terminal_size():
-                print("\033[2J\033[H", end="", flush=True)
-            self._render_auto(fraction)
-            self._wait_until(now + 0.1)
-
-    def _show_menu(self):
-        while True:
-            self._render_menu()
-            try:
-                choice = input("Opción (Enter = iniciar): ").strip()
-            except EOFError:
-                return 11
-            if choice == "" or choice == "1":
-                return 1
-            if choice == "2":
-                self.clock.tick_forward()
-            elif choice == "3":
-                self.clock.tick_backward()
-            elif choice == "4":
-                self.clock.fast_adjust_minutes(10)
-            elif choice == "5":
-                self.clock.fast_adjust_minutes(-10)
-            elif choice == "6":
-                self.clock.reset_midnight()
-            elif choice == "7":
-                pass
-            elif choice == "8":
-                self._synchronize_clock()
-                return 1
-            elif choice == "9":
-                now = self._now()
-                if now is None:
-                    now = self._fallback_seconds
-                self.clock.chronometer.toggle(now)
-            elif choice == "10":
-                self.clock.chronometer.reset()
-            elif choice == "11":
-                return 11
-            else:
-                continue
 
     def _time_now(self):
         now = self._now()
@@ -601,29 +525,28 @@ class ClockCanvasApp:
             "8 Hora actual",
             "9 Cronómetro iniciar/pausar",
             "10 Cronómetro reiniciar",
-            "11 Salir",
         )
         for offset, option in enumerate(options):
             self._panel_text(grid, colors, 9 + offset, option, COLOR_STATUS)
-        self._panel_text(grid, colors, 21, "Escribe el número", COLOR_DIM)
-        self._panel_text(grid, colors, 22, "y pulsa ENTER", COLOR_DIM)
+        self._panel_text(grid, colors, 20, "Escribe el número", COLOR_DIM)
+        self._panel_text(grid, colors, 21, "y pulsa ENTER", COLOR_DIM)
         chrono_value = self.clock.chronometer.value(self._time_now())
         chrono_state = "▶" if self.clock.chronometer.running() else "⏸"
         self._panel_text(
-            grid, colors, 24, f"CRONÓMETRO {chrono_state}", COLOR_SECOND
+            grid, colors, 23, f"CRONÓMETRO {chrono_state}", COLOR_SECOND
         )
         self._panel_text(
-            grid, colors, 25, self._format_chronometer(chrono_value), COLOR_STATUS
+            grid, colors, 24, self._format_chronometer(chrono_value), COLOR_STATUS
         )
         self._panel_text(
             grid,
             colors,
-            27,
+            26,
             f"SEG {round(second_angle)}°  MIN {round(minute_angle)}°  HORA {round(hour_angle)}°",
             COLOR_DIM,
         )
-        self._panel_text(grid, colors, 29, "La hora sigue avanzando", COLOR_DIM)
-        self._panel_text(grid, colors, 31, "Clic en la terminal", COLOR_DIM)
+        self._panel_text(grid, colors, 28, "La hora sigue avanzando", COLOR_DIM)
+        self._panel_text(grid, colors, 30, "Clic en la terminal", COLOR_DIM)
         return self._rows(grid, colors)[: self.frame_height - 1]
 
     def _build_grid(self, fraction):
@@ -665,7 +588,7 @@ class ClockCanvasApp:
             print(
                 "\033[?1049h\033[2J\033[H"
                 + body
-                + "\nOpción (1-11): ",
+                + "\nOpción (1-10): ",
                 end="",
                 flush=True,
             )
@@ -731,7 +654,6 @@ class ClockCanvasApp:
                 "8 Hora actual",
                 "9 Cronómetro iniciar/pausar",
                 "10 Cronómetro reiniciar",
-                "11 Salir",
             )
             for offset, option in enumerate(options):
                 self._centered_text(
@@ -745,7 +667,6 @@ class ClockCanvasApp:
                 "6 Reiniciar reloj",
                 "7 Redibujar   8 Hora actual",
                 "9 Cronómetro  10 Reset",
-                "11 Salir",
             )
             for offset, option in enumerate(options):
                 self._centered_text(
