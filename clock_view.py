@@ -41,7 +41,7 @@ class ClockCanvasApp:
         self._fallback_seconds = 0.0
         self.terminal_lines = self._read_environment_int("LINES", 24)
         self.terminal_columns = self._read_environment_int("COLUMNS", 80)
-        self.frame_width = min(78, max(40, self.terminal_columns - 1))
+        self.frame_width = max(40, self.terminal_columns - 1)
         self.center_x = self.frame_width // 2
         self.full_layout = self.terminal_lines >= 34
         if self.full_layout:
