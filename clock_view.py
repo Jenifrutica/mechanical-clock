@@ -37,6 +37,8 @@ COLOR_SECOND = "\033[38;5;196m"
 COLOR_CENTER = "\033[38;5;196m"
 COLOR_STATUS = "\033[97m"
 COLOR_DIM = "\033[38;5;245m"
+COLOR_CARDINAL = "\033[38;5;196m"
+COLOR_NUMBERS = ("\033[97m", "\033[37m", "\033[38;5;250m")
 
 
 class ClockCanvasApp:
@@ -297,6 +299,20 @@ class ClockCanvasApp:
             grid, colors, second_position, 0.97, "·", COLOR_SECOND, 1
         )
 
+        for index in range(12):
+            value = 12 if index == 0 else index
+            point = CIRCLE_POINTS[index * 5]
+            x = CENTER_X + round(point[0] * 0.76)
+            y = CENTER_Y + round(point[1] * 0.76)
+            label = str(value)
+            if len(label) == 2:
+                x -= 1
+            if value in (12, 3, 6, 9):
+                number_color = COLOR_CARDINAL
+            else:
+                number_color = COLOR_NUMBERS[index % len(COLOR_NUMBERS)]
+            self._put_text(grid, colors, x, y, label, number_color)
+
         grid[CENTER_Y][CENTER_X] = "●"
         colors[CENTER_Y][CENTER_X] = COLOR_CENTER
 
@@ -313,8 +329,8 @@ class ClockCanvasApp:
         mode = "MARCHA" if data["running"] else "PAUSA"
         time_text = f"{data['hours']:02d}:{data['minutes']:02d}:{data['seconds']:02d}"
         footer = (
-            f"{time_text}  COLOMBIA  {mode}  |  "
-            f"S {second_angle:5.1f}°  M {minute_angle:5.1f}°  H {hour_angle:5.1f}°  |  "
+            f"{time_text}  Colombia  {mode}  |  "
+            f"S {round(second_angle)}°  M {round(minute_angle)}°  H {round(hour_angle)}°  |  "
             "Ctrl+C menú"
         )
         self._centered_text(grid, colors, 23, footer, COLOR_DIM)
