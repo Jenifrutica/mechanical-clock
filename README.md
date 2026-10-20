@@ -20,12 +20,12 @@ Archivos:
 python3 main.py
 ```
 
-El reloj inicia automáticamente en hora Colombia (UTC-5). Las manecillas giran en una terminal a pantalla completa.
+Al abrir se muestra el reloj en hora Colombia (UTC-5) y el menú. Escribe `1` y presiona `Enter` para iniciar la marcha automática. Las manecillas giran en una terminal a pantalla completa.
 
 ## Controles
 
 - `Ctrl+C`: pausar y abrir el menú.
-- `1`: iniciar o reanudar la marcha.
+- `1` + `Enter`: iniciar o reanudar la marcha.
 - `2`: avanzar 1 segundo.
 - `3`: retroceder 1 segundo.
 - `4`: avanzar 10 minutos.
@@ -33,6 +33,8 @@ El reloj inicia automáticamente en hora Colombia (UTC-5). Las manecillas giran 
 - `6`: reiniciar a `12:00:00`.
 - `7`: redibujar.
 - `8`: salir.
+
+Escribe el número y presiona `Enter`. Haz clic dentro de la terminal para que el teclado funcione.
 
 ## Despliegue
 
@@ -45,6 +47,6 @@ El despliegue usa Docker y ttyd. Nada de esto forma parte del código Python del
 
 Repositorio: https://github.com/Jenifrutica/mechanical-clock
 
-Link público: https://PENDIENTE-DE-RENDER
+Link público: https://mechanical-clock.onrender.com
 
 Cada visitante abre su propia sesión y su propio reloj. Los cambios de un visitante no afectan a los demás. Máximo 4 sesiones simultáneas.
