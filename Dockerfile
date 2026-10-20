@@ -7,10 +7,13 @@ RUN adduser -D -H -u 10001 clockuser
 WORKDIR /app
 
 COPY *.py ./
+COPY entrypoint.sh ./
+
+RUN chmod +x entrypoint.sh
 
 ENV PORT=8080
 EXPOSE 8080
 
 USER clockuser
 
-CMD ["sh", "-c", "exec ttyd -W -p ${PORT} -i 0.0.0.0 -m 4 -O -t fontSize=22 python3 main.py"]
+CMD ["sh", "-c", "exec ttyd -W -p ${PORT} -i 0.0.0.0 -m 4 -O -t fontSize=22 ./entrypoint.sh"]

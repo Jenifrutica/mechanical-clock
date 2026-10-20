@@ -1,31 +1,5 @@
-CIRCLE_POINTS = (
-    (0, -11), (2, -11), (4, -11), (6, -10), (8, -10), (9, -10), (11, -9), (13, -8), (14, -7), (15, -6),
-    (16, -6), (17, -4), (18, -3), (19, -2), (19, -1), (19, 0), (19, 1), (19, 2), (18, 3), (17, 4),
-    (16, 5), (15, 6), (14, 7), (13, 8), (11, 9), (9, 10), (8, 10), (6, 10), (4, 11), (2, 11),
-    (0, 11), (-2, 11), (-4, 11), (-6, 10), (-8, 10), (-10, 10), (-11, 9), (-13, 8), (-14, 7), (-15, 6),
-    (-16, 6), (-17, 4), (-18, 3), (-19, 2), (-19, 1), (-19, 0), (-19, -1), (-19, -2), (-18, -3), (-17, -4),
-    (-16, -6), (-15, -6), (-14, -7), (-13, -8), (-11, -9), (-10, -10), (-8, -10), (-6, -10), (-4, -11), (-2, -11),
-)
-
-RIM_POINTS = (
-    (0, -11), (1, -11), (2, -11), (3, -11), (4, -11), (5, -11), (6, -10), (7, -10), (8, -10), (9, -10),
-    (10, -9), (11, -9), (12, -9), (12, -8), (13, -8), (14, -8), (14, -7), (15, -7), (15, -6), (16, -6),
-    (17, -5), (17, -4), (18, -4), (18, -3), (19, -2), (19, -1), (19, 0), (19, 1), (19, 2), (18, 3),
-    (18, 4), (17, 4), (17, 5), (16, 5), (16, 6), (15, 6), (15, 7), (14, 7), (14, 8), (13, 8),
-    (12, 8), (12, 9), (11, 9), (10, 9), (9, 10), (8, 10), (7, 10), (6, 10), (5, 11), (4, 11),
-    (3, 11), (2, 11), (1, 11), (0, 11), (-1, 11), (-2, 11), (-3, 11), (-4, 11), (-5, 11), (-6, 10),
-    (-7, 10), (-8, 10), (-9, 10), (-10, 10), (-10, 9), (-11, 9), (-12, 9), (-12, 8), (-13, 8), (-14, 8),
-    (-14, 7), (-15, 7), (-15, 6), (-16, 6), (-17, 5), (-17, 4), (-18, 4), (-18, 3), (-19, 2), (-19, 1),
-    (-19, 0), (-19, -1), (-19, -2), (-18, -3), (-18, -4), (-17, -4), (-17, -5), (-16, -6), (-15, -6), (-15, -7),
-    (-14, -7), (-14, -8), (-13, -8), (-12, -8), (-12, -9), (-11, -9), (-10, -9), (-10, -10), (-9, -10), (-8, -10),
-    (-7, -10), (-6, -10), (-5, -11), (-4, -11), (-3, -11), (-2, -11), (-1, -11),
-)
-
-COLOMBIA_OFFSET_SECONDS = -5 * 3600
+PI = 3.141592653589793
 FRAME_WIDTH = 78
-FRAME_HEIGHT = 24
-CENTER_X = 39
-CENTER_Y = 11
 
 RESET = "\033[0m"
 COLOR_RIM = "\033[38;5;88m"
@@ -35,10 +9,30 @@ COLOR_HOUR = "\033[97m"
 COLOR_MINUTE = "\033[37m"
 COLOR_SECOND = "\033[38;5;196m"
 COLOR_CENTER = "\033[38;5;196m"
+COLOR_CARDINAL = "\033[38;5;196m"
 COLOR_STATUS = "\033[97m"
 COLOR_DIM = "\033[38;5;245m"
-COLOR_CARDINAL = "\033[38;5;196m"
 COLOR_NUMBERS = ("\033[97m", "\033[37m", "\033[38;5;250m")
+
+
+def _sin_deg(degrees):
+    radians = degrees * PI / 180.0
+    while radians > PI:
+        radians -= 2.0 * PI
+    while radians < -PI:
+        radians += 2.0 * PI
+    term = radians
+    result = radians
+    n = 1
+    while n < 8:
+        term *= -radians * radians / ((2 * n) * (2 * n + 1))
+        result += term
+        n += 1
+    return result
+
+
+def _cos_deg(degrees):
+    return _sin_deg(degrees + 90.0)
 
 
 class ClockCanvasApp:
@@ -46,6 +40,37 @@ class ClockCanvasApp:
         self.clock = clock
         self._use_proc_uptime = True
         self._fallback_seconds = 0.0
+        self.terminal_lines = self._read_environment_int("LINES", 24)
+        self.full_layout = self.terminal_lines >= 40
+        if self.full_layout:
+            self.frame_height = 40
+            self.center_y = 19
+            self.radius_x = 29
+            self.radius_y = 17
+            self.footer_y = 39
+        else:
+            self.frame_height = 24
+            self.center_y = 11
+            self.radius_x = 19
+            self.radius_y = 11
+            self.footer_y = 23
+        self.center_x = 39
+        self.top_padding = max(0, (self.terminal_lines - self.frame_height) // 2)
+
+    def _read_environment_int(self, name, default):
+        prefix = (name + "=").encode()
+        try:
+            with open("/proc/self/environ", "rb") as file:
+                entries = file.read().split(b"\0")
+        except OSError:
+            return default
+        for entry in entries:
+            if entry.startswith(prefix):
+                try:
+                    return int(entry[len(prefix):].decode())
+                except ValueError:
+                    return default
+        return default
 
     def run(self):
         self._enter_screen()
@@ -107,7 +132,7 @@ class ClockCanvasApp:
         epoch = self._read_epoch()
         if epoch is None:
             return
-        local_seconds = int(epoch) + COLOMBIA_OFFSET_SECONDS
+        local_seconds = int(epoch) - 5 * 3600
         seconds_of_day = local_seconds % 86400
         hour_24 = seconds_of_day // 3600
         minute = (seconds_of_day % 3600) // 60
@@ -205,19 +230,15 @@ class ClockCanvasApp:
         )
 
     def _point_at(self, position):
-        position = position % 60.0
-        index = int(position)
-        fraction = position - index
-        first = CIRCLE_POINTS[index]
-        second = CIRCLE_POINTS[(index + 1) % 60]
+        angle = position * 6.0
         return (
-            first[0] + (second[0] - first[0]) * fraction,
-            first[1] + (second[1] - first[1]) * fraction,
+            self.radius_x * _sin_deg(angle),
+            -self.radius_y * _cos_deg(angle),
         )
 
     def _put_text(self, grid, colors, x, y, text, color=None):
         for character in text:
-            if 0 <= x < FRAME_WIDTH and 0 <= y < FRAME_HEIGHT:
+            if 0 <= x < FRAME_WIDTH and 0 <= y < self.frame_height:
                 grid[y][x] = character
                 colors[y][x] = color
             x += 1
@@ -234,7 +255,7 @@ class ClockCanvasApp:
         step_y = 1 if y0 < y1 else -1
         error = delta_x + delta_y
         while True:
-            if 0 <= x0 < FRAME_WIDTH and 0 <= y0 < FRAME_HEIGHT:
+            if 0 <= x0 < FRAME_WIDTH and 0 <= y0 < self.frame_height:
                 grid[y0][x0] = character
                 colors[y0][x0] = color
             if x0 == x1 and y0 == y1:
@@ -249,10 +270,10 @@ class ClockCanvasApp:
 
     def _draw_hand(self, grid, colors, position, length, character, color, thickness):
         point_x, point_y = self._point_at(position)
-        end_x = CENTER_X + round(point_x * length)
-        end_y = CENTER_Y + round(point_y * length)
+        end_x = self.center_x + round(point_x * length)
+        end_y = self.center_y + round(point_y * length)
         self._draw_line(
-            grid, colors, CENTER_X, CENTER_Y, end_x, end_y, character, color
+            grid, colors, self.center_x, self.center_y, end_x, end_y, character, color
         )
         if thickness > 1:
             if abs(point_y) >= abs(point_x):
@@ -264,30 +285,30 @@ class ClockCanvasApp:
             self._draw_line(
                 grid,
                 colors,
-                CENTER_X + offset_x,
-                CENTER_Y + offset_y,
+                self.center_x + offset_x,
+                self.center_y + offset_y,
                 end_x + offset_x,
                 end_y + offset_y,
                 character,
                 color,
             )
 
-    def _set_point(self, grid, colors, point, scale, character, color):
-        x = CENTER_X + round(point[0] * scale)
-        y = CENTER_Y + round(point[1] * scale)
-        if 0 <= x < FRAME_WIDTH and 0 <= y < FRAME_HEIGHT:
+    def _set_angle_point(self, grid, colors, angle, scale, character, color):
+        x = self.center_x + round(self.radius_x * scale * _sin_deg(angle))
+        y = self.center_y - round(self.radius_y * scale * _cos_deg(angle))
+        if 0 <= x < FRAME_WIDTH and 0 <= y < self.frame_height:
             grid[y][x] = character
             colors[y][x] = color
 
     def _draw_dial(self, grid, colors, second_position, minute_position, hour_position):
-        for point in RIM_POINTS:
-            self._set_point(grid, colors, point, 1.0, "▓", COLOR_RIM)
-
-        for index, point in enumerate(CIRCLE_POINTS):
+        for angle in range(0, 360, 2):
+            self._set_angle_point(grid, colors, angle, 1.0, "▓", COLOR_RIM)
+        for index in range(60):
+            angle = index * 6
             if index % 5 == 0:
-                self._set_point(grid, colors, point, 0.90, "+", COLOR_MAJOR)
+                self._set_angle_point(grid, colors, angle, 0.90, "+", COLOR_MAJOR)
             else:
-                self._set_point(grid, colors, point, 0.90, "·", COLOR_TICK)
+                self._set_angle_point(grid, colors, angle, 0.90, "·", COLOR_TICK)
 
         self._draw_hand(
             grid, colors, hour_position, 0.55, "█", COLOR_HOUR, 2
@@ -301,9 +322,9 @@ class ClockCanvasApp:
 
         for index in range(12):
             value = 12 if index == 0 else index
-            point = CIRCLE_POINTS[index * 5]
-            x = CENTER_X + round(point[0] * 0.76)
-            y = CENTER_Y + round(point[1] * 0.76)
+            angle = index * 30
+            x = self.center_x + round(self.radius_x * 0.76 * _sin_deg(angle))
+            y = self.center_y - round(self.radius_y * 0.76 * _cos_deg(angle))
             label = str(value)
             if len(label) == 2:
                 x -= 1
@@ -313,12 +334,12 @@ class ClockCanvasApp:
                 number_color = COLOR_NUMBERS[index % len(COLOR_NUMBERS)]
             self._put_text(grid, colors, x, y, label, number_color)
 
-        grid[CENTER_Y][CENTER_X] = "●"
-        colors[CENTER_Y][CENTER_X] = COLOR_CENTER
+        grid[self.center_y][self.center_x] = "●"
+        colors[self.center_y][self.center_x] = COLOR_CENTER
 
     def _build_grid(self, fraction):
-        grid = [[" "] * FRAME_WIDTH for _ in range(FRAME_HEIGHT)]
-        colors = [[None] * FRAME_WIDTH for _ in range(FRAME_HEIGHT)]
+        grid = [[" "] * FRAME_WIDTH for _ in range(self.frame_height)]
+        colors = [[None] * FRAME_WIDTH for _ in range(self.frame_height)]
         data = self.clock.readout()
         second_angle, minute_angle, hour_angle, second_position, minute_position, hour_position = (
             self._angles(fraction)
@@ -333,72 +354,112 @@ class ClockCanvasApp:
             f"S {round(second_angle)}°  M {round(minute_angle)}°  H {round(hour_angle)}°  |  "
             "Ctrl+C menú"
         )
-        self._centered_text(grid, colors, 23, footer, COLOR_DIM)
+        self._centered_text(grid, colors, self.footer_y, footer, COLOR_DIM)
         footer_x = (FRAME_WIDTH - len(footer)) // 2
         mode_x = footer_x + footer.index(mode)
         self._put_text(
             grid,
             colors,
             mode_x,
-            23,
+            self.footer_y,
             mode,
             COLOR_SECOND if data["running"] else COLOR_DIM,
         )
         return grid, colors
 
     def _render_menu(self):
-        grid = [[" "] * FRAME_WIDTH for _ in range(FRAME_HEIGHT)]
-        colors = [[None] * FRAME_WIDTH for _ in range(FRAME_HEIGHT)]
+        grid = [[" "] * FRAME_WIDTH for _ in range(self.frame_height)]
+        colors = [[None] * FRAME_WIDTH for _ in range(self.frame_height)]
         data = self.clock.readout()
         second_angle, minute_angle, hour_angle, _, _, _ = self._angles(0.0)
         mode = "MARCHA" if data["running"] else "PAUSA"
         time_text = f"{data['hours']:02d}:{data['minutes']:02d}:{data['seconds']:02d}"
 
+        if self.full_layout:
+            status_y = 12
+            angles_y = 13
+            title_y = 16
+            first_option_y = 19
+            instruction_y = 30
+        else:
+            status_y = 5
+            angles_y = 6
+            title_y = 9
+            first_option_y = 12
+            instruction_y = 20
+
         status = f"HORA {time_text}    COLOMBIA (UTC-5)    MODO {mode}"
-        self._centered_text(grid, colors, 2, status, COLOR_STATUS)
+        self._centered_text(grid, colors, status_y, status, COLOR_STATUS)
         status_x = (FRAME_WIDTH - len(status)) // 2
         self._put_text(
             grid,
             colors,
             status_x + status.index(mode),
-            2,
+            status_y,
             mode,
             COLOR_SECOND if data["running"] else COLOR_DIM,
         )
         self._centered_text(
             grid,
             colors,
-            3,
+            angles_y,
             f"SEG {second_angle:5.1f}°    MIN {minute_angle:5.1f}°    HORA {hour_angle:5.1f}°",
             COLOR_DIM,
         )
-        self._centered_text(grid, colors, 5, "MENÚ", COLOR_SECOND)
-        self._centered_text(grid, colors, 7, "1 Iniciar/Reanudar", COLOR_STATUS)
-        self._centered_text(grid, colors, 8, "2 +1s        3 -1s", COLOR_STATUS)
-        self._centered_text(grid, colors, 9, "4 +10min     5 -10min", COLOR_STATUS)
-        self._centered_text(grid, colors, 10, "6 Reiniciar", COLOR_STATUS)
-        self._centered_text(grid, colors, 11, "7 Redibujar", COLOR_STATUS)
-        self._centered_text(grid, colors, 12, "8 Salir", COLOR_STATUS)
+        self._centered_text(grid, colors, title_y, "MENÚ", COLOR_SECOND)
+
+        if self.full_layout:
+            options = (
+                "1 Iniciar/Reanudar",
+                "2 +1s",
+                "3 -1s",
+                "4 +10min",
+                "5 -10min",
+                "6 Reiniciar",
+                "7 Redibujar",
+                "8 Salir",
+            )
+            for offset, option in enumerate(options):
+                self._centered_text(
+                    grid, colors, first_option_y + offset, option, COLOR_STATUS
+                )
+        else:
+            options = (
+                "1 Iniciar/Reanudar",
+                "2 +1s        3 -1s",
+                "4 +10min     5 -10min",
+                "6 Reiniciar",
+                "7 Redibujar",
+                "8 Salir",
+            )
+            for offset, option in enumerate(options):
+                self._centered_text(
+                    grid, colors, first_option_y + offset, option, COLOR_STATUS
+                )
+
         self._centered_text(
             grid,
             colors,
-            15,
+            instruction_y,
             "Escribe el número y pulsa ENTER",
             COLOR_DIM,
         )
         self._centered_text(
             grid,
             colors,
-            16,
+            instruction_y + 1,
             "ENTER solo = iniciar/reanudar",
             COLOR_DIM,
         )
-        rows = self._rows(grid, colors)
-        self._write_frame(rows[:23], clear=True, newline=True)
+        self._write_frame(
+            self._rows(grid, colors)[:self.frame_height - 1],
+            clear=True,
+            newline=True,
+        )
 
     def _rows(self, grid, colors):
         rows = []
-        for y in range(FRAME_HEIGHT):
+        for y in range(self.frame_height):
             parts = []
             current_color = None
             for x in range(FRAME_WIDTH):
@@ -417,6 +478,8 @@ class ClockCanvasApp:
 
     def _write_frame(self, rows, clear=False, newline=False):
         prefix = "\033[2J\033[H" if clear else "\033[H"
+        if self.top_padding:
+            rows = [""] * self.top_padding + list(rows)
         text = prefix + "\n".join(rows)
         if newline:
             text += "\n"

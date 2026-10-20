@@ -42,6 +42,7 @@ Los siguientes archivos son de despliegue y son ajenos al código solicitado:
 
 - `Dockerfile`
 - `.dockerignore`
+- `entrypoint.sh`
 
 El despliegue usa Docker y ttyd. Nada de esto forma parte del código Python del reloj.
 
