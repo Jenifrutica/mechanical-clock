@@ -43,13 +43,13 @@ class ClockCanvasApp:
         self.terminal_columns = self._read_environment_int("COLUMNS", 80)
         self.frame_width = min(78, max(40, self.terminal_columns - 1))
         self.center_x = self.frame_width // 2
-        self.full_layout = self.terminal_lines >= 38
+        self.full_layout = self.terminal_lines >= 34
         if self.full_layout:
-            self.frame_height = 38
-            self.center_y = 18
-            self.radius_x = min(28, max(10, (self.frame_width - 6) // 2))
-            self.radius_y = max(6, round(self.radius_x * 16 / 28))
-            self.footer_y = 37
+            self.frame_height = 34
+            self.center_y = 17
+            self.radius_x = min(25, max(10, (self.frame_width - 6) // 2))
+            self.radius_y = max(6, round(self.radius_x * 14 / 25))
+            self.footer_y = 33
         else:
             self.frame_height = 24
             self.center_y = 11
@@ -377,11 +377,11 @@ class ClockCanvasApp:
         time_text = f"{data['hours']:02d}:{data['minutes']:02d}:{data['seconds']:02d}"
 
         if self.full_layout:
-            status_y = 11
-            angles_y = 12
-            title_y = 15
-            first_option_y = 18
-            instruction_y = 28
+            status_y = 9
+            angles_y = 10
+            title_y = 13
+            first_option_y = 15
+            instruction_y = 25
         else:
             status_y = 5
             angles_y = 6
