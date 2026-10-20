@@ -14,6 +14,16 @@ Archivos:
 - `clock_view.py`
 - `main.py`
 
+## Capturas
+
+Pantalla principal:
+
+![Pantalla principal](docs/clock-main.png)
+
+Menú:
+
+![Menú](docs/clock-menu.png)
+
 ## Ejecución local
 
 ```text
@@ -38,7 +48,7 @@ Al abrir, el reloj inicia en marcha automática en hora Colombia (UTC-5). Las ma
 
 El reloj sigue avanzando mientras el menú está abierto. El cronómetro se muestra y controla en el menú, no en la pantalla principal. Para terminar, cierra la pestaña o la terminal.
 
-Escribe el número y presiona `Enter`. Haz clic dentro de la terminal para que el teclado funcione.
+Solo se aceptan números del 1 al 10. Cualquier otra entrada muestra un aviso. Haz clic dentro de la terminal para que el teclado funcione.
 
 ## Despliegue
 

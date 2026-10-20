@@ -44,6 +44,7 @@ class ClockCanvasApp:
         self.menu_mode = False
         self.exit_requested = False
         self._menu_prompt_ready = False
+        self.menu_error = ""
         self.terminal_lines = self._read_environment_int("LINES", 24)
         self.terminal_columns = self._read_environment_int("COLUMNS", 80)
         self.size_file = self._read_environment_value("CLOCK_SIZE_FILE")
@@ -186,10 +187,16 @@ class ClockCanvasApp:
             choice = line.strip()
             if choice == "__menu__":
                 self.menu_mode = not self.menu_mode
+                self.menu_error = ""
                 self._menu_prompt_ready = False
                 continue
             if not self.menu_mode:
                 continue
+            if choice not in ("1", "2", "3", "4", "5", "6", "7", "8", "9", "10"):
+                self.menu_error = "Solo se permite un número del 1 al 10"
+                self._menu_prompt_ready = False
+                continue
+            self.menu_error = ""
             self._handle_command(choice)
             self._menu_prompt_ready = False
             if self.exit_requested or not self.menu_mode:
@@ -545,6 +552,8 @@ class ClockCanvasApp:
             COLOR_DIM,
         )
         self._panel_text(grid, colors, 28, "La hora sigue avanzando", COLOR_DIM)
+        if self.menu_error:
+            self._panel_text(grid, colors, 30, self.menu_error, COLOR_SECOND)
         return self._rows(grid, colors)[: self.frame_height - 1]
 
     def _build_grid(self, fraction):
@@ -685,6 +694,10 @@ class ClockCanvasApp:
             "La hora sigue avanzando",
             COLOR_DIM,
         )
+        if self.menu_error:
+            self._centered_text(
+                grid, colors, instruction_y + 2, self.menu_error, COLOR_SECOND
+            )
         self._write_menu_frame(self._rows(grid, colors)[:self.frame_height - 1])
 
     def _rows(self, grid, colors):
