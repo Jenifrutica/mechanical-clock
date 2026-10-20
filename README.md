@@ -44,11 +44,11 @@ Al abrir, el reloj inicia en marcha automática en hora Colombia (UTC-5). Las ma
 - `7`: redibujar.
 - `8`: volver a la hora actual.
 - `9`: iniciar/pausar el cronómetro.
-- `10`: reiniciar el cronómetro.
+- `0`: reiniciar el cronómetro.
 
 El reloj sigue avanzando mientras el menú está abierto. El cronómetro se muestra y controla en el menú, no en la pantalla principal. Para terminar, cierra la pestaña o la terminal.
 
-Solo se aceptan números del 1 al 10. Cualquier otra entrada muestra un aviso. Haz clic dentro de la terminal para que el teclado funcione.
+Solo se acepta un dígito del 0 al 9. No se aceptan letras ni varios números. Cualquier otra entrada muestra un aviso. Haz clic dentro de la terminal para que el teclado funcione.
 
 ## Despliegue
 

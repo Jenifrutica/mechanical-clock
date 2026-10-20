@@ -192,8 +192,8 @@ class ClockCanvasApp:
                 continue
             if not self.menu_mode:
                 continue
-            if choice not in ("1", "2", "3", "4", "5", "6", "7", "8", "9", "10"):
-                self.menu_error = "Solo se permite un número del 1 al 10"
+            if len(choice) != 1 or choice not in "0123456789":
+                self.menu_error = "Solo se permite un número del 0 al 9"
                 self._menu_prompt_ready = False
                 continue
             self.menu_error = ""
@@ -203,7 +203,7 @@ class ClockCanvasApp:
                 break
 
     def _handle_command(self, choice):
-        if choice == "" or choice == "1":
+        if choice == "1":
             self.menu_mode = False
             self.clock.start()
         elif choice == "2":
@@ -224,7 +224,7 @@ class ClockCanvasApp:
             self.menu_mode = False
         elif choice == "9":
             self.clock.chronometer.toggle(self._time_now())
-        elif choice == "10":
+        elif choice == "0":
             self.clock.chronometer.reset()
 
     def _enter_screen(self):
@@ -530,7 +530,7 @@ class ClockCanvasApp:
             "7 Redibujar",
             "8 Hora actual",
             "9 Cronómetro iniciar/pausar",
-            "10 Cronómetro reiniciar",
+            "0 Cronómetro reiniciar",
         )
         for offset, option in enumerate(options):
             self._panel_text(grid, colors, 9 + offset, option, COLOR_STATUS)
@@ -595,7 +595,7 @@ class ClockCanvasApp:
             print(
                 "\033[?1049h\033[2J\033[H"
                 + body
-                + "\nOpción (1-10): ",
+                + "\nOpción (0-9): ",
                 end="",
                 flush=True,
             )
@@ -660,7 +660,7 @@ class ClockCanvasApp:
                 "7 Redibujar",
                 "8 Hora actual",
                 "9 Cronómetro iniciar/pausar",
-                "10 Cronómetro reiniciar",
+                "0 Cronómetro reiniciar",
             )
             for offset, option in enumerate(options):
                 self._centered_text(
@@ -673,7 +673,7 @@ class ClockCanvasApp:
                 "4 +10min     5 -10min",
                 "6 Reiniciar reloj",
                 "7 Redibujar   8 Hora actual",
-                "9 Cronómetro  10 Reset",
+                "9 Cronómetro   0 Reset",
             )
             for offset, option in enumerate(options):
                 self._centered_text(
