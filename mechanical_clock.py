@@ -3,6 +3,39 @@ from hand import Hand
 from gear_train import GearTrain
 
 
+class Chronometer:
+    def __init__(self):
+        self.elapsed = 0.0
+        self.started_at = None
+
+    def running(self):
+        return self.started_at is not None
+
+    def start(self, now):
+        if self.started_at is None:
+            self.started_at = now
+
+    def pause(self, now):
+        if self.started_at is not None:
+            self.elapsed += now - self.started_at
+            self.started_at = None
+
+    def toggle(self, now):
+        if self.started_at is None:
+            self.start(now)
+        else:
+            self.pause(now)
+
+    def reset(self):
+        self.elapsed = 0.0
+        self.started_at = None
+
+    def value(self, now):
+        if self.started_at is None:
+            return self.elapsed
+        return self.elapsed + (now - self.started_at)
+
+
 class MechanicalClock:
     def __init__(self):
         self.seconds_track = CircularTrack("seconds", range(60), 0)
@@ -20,6 +53,7 @@ class MechanicalClock:
         self.gear_train.attach(self.minute_hand)
         self.gear_train.attach(self.hour_hand)
         self.is_running = False
+        self.chronometer = Chronometer()
         self.reset_midnight()
 
     def start(self):

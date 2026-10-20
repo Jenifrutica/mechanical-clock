@@ -32,7 +32,10 @@ Al abrir, el reloj inicia en marcha automática en hora Colombia (UTC-5). Las ma
 - `5`: retroceder 10 minutos.
 - `6`: reiniciar a `12:00:00`.
 - `7`: redibujar.
-- `8`: salir.
+- `8`: volver a la hora actual y reanudar.
+- `9`: iniciar o pausar el cronómetro.
+- `10`: reiniciar el cronómetro.
+- `11`: salir.
 
 Escribe el número y presiona `Enter`. Haz clic dentro de la terminal para que el teclado funcione.
 

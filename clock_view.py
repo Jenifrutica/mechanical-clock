@@ -135,7 +135,7 @@ class ClockCanvasApp:
                         action = self._show_menu()
                     except KeyboardInterrupt:
                         break
-                    if action == 8:
+                    if action == 11:
                         break
         except KeyboardInterrupt:
             pass
@@ -241,7 +241,7 @@ class ClockCanvasApp:
             try:
                 choice = input("Opción (Enter = iniciar): ").strip()
             except EOFError:
-                return 8
+                return 11
             if choice == "" or choice == "1":
                 return 1
             if choice == "2":
@@ -257,9 +257,32 @@ class ClockCanvasApp:
             elif choice == "7":
                 pass
             elif choice == "8":
-                return 8
+                self._synchronize_clock()
+                return 1
+            elif choice == "9":
+                now = self._now()
+                if now is None:
+                    now = self._fallback_seconds
+                self.clock.chronometer.toggle(now)
+            elif choice == "10":
+                self.clock.chronometer.reset()
+            elif choice == "11":
+                return 11
             else:
                 continue
+
+    def _time_now(self):
+        now = self._now()
+        if now is None:
+            return self._fallback_seconds
+        return now
+
+    def _format_chronometer(self, seconds):
+        total = int(seconds)
+        minutes = total // 60
+        remainder = total % 60
+        tenths = int((seconds - total) * 10)
+        return f"{minutes:02d}:{remainder:02d}.{tenths}"
 
     def _angles(self, fraction):
         data = self.clock.readout()
@@ -441,19 +464,22 @@ class ClockCanvasApp:
             grid, colors, 12, f"HORA {round(hour_angle)}°", COLOR_STATUS
         )
 
-        self._panel_text(grid, colors, 15, "PISTAS", COLOR_SECOND)
-        self._panel_text(grid, colors, 16, "60 / 60 / 12", COLOR_DIM)
-        self._panel_text(grid, colors, 17, "ACARREO", COLOR_SECOND)
-        self._panel_text(grid, colors, 18, "Seg -> Min -> Hora", COLOR_DIM)
+        chrono = self._format_chronometer(
+            self.clock.chronometer.value(self._time_now())
+        )
+        self._panel_text(grid, colors, 15, "CRONÓMETRO", COLOR_SECOND)
+        self._panel_text(grid, colors, 16, chrono, COLOR_STATUS)
+        self._panel_text(grid, colors, 18, "PISTAS 60 / 60 / 12", COLOR_DIM)
+        self._panel_text(grid, colors, 19, "ACARREO S -> M -> H", COLOR_DIM)
 
         self._panel_text(grid, colors, 21, "CONTROLES", COLOR_SECOND)
         self._panel_text(grid, colors, 22, "Ctrl+C menú", COLOR_STATUS)
         self._panel_text(grid, colors, 23, "Enter reanudar", COLOR_STATUS)
         self._panel_text(grid, colors, 24, "2/3  ±1s", COLOR_DIM)
         self._panel_text(grid, colors, 25, "4/5  ±10min", COLOR_DIM)
-        self._panel_text(grid, colors, 26, "6  reiniciar", COLOR_DIM)
-        self._panel_text(grid, colors, 27, "7  redibujar", COLOR_DIM)
-        self._panel_text(grid, colors, 28, "8  salir", COLOR_DIM)
+        self._panel_text(grid, colors, 26, "6  reiniciar reloj", COLOR_DIM)
+        self._panel_text(grid, colors, 27, "8  hora actual", COLOR_DIM)
+        self._panel_text(grid, colors, 28, "9  cronómetro  10 reset", COLOR_DIM)
         self._panel_text(grid, colors, 30, "Clic en la terminal", COLOR_DIM)
         return grid, colors
 
@@ -482,25 +508,27 @@ class ClockCanvasApp:
             "3 -1s",
             "4 +10min",
             "5 -10min",
-            "6 Reiniciar",
+            "6 Reiniciar reloj",
             "7 Redibujar",
-            "8 Salir",
+            "8 Hora actual",
+            "9 Cronómetro iniciar/pausar",
+            "10 Cronómetro reiniciar",
+            "11 Salir",
         )
         for offset, option in enumerate(options):
             self._panel_text(grid, colors, 9 + offset, option, COLOR_STATUS)
-        self._panel_text(grid, colors, 19, "Escribe el número", COLOR_DIM)
-        self._panel_text(grid, colors, 20, "y pulsa ENTER", COLOR_DIM)
-        self._panel_text(grid, colors, 22, "ENTER solo = iniciar", COLOR_DIM)
-        self._panel_text(
-            grid, colors, 24, f"SEG  {round(second_angle)}°", COLOR_DIM
+        self._panel_text(grid, colors, 21, "Escribe el número", COLOR_DIM)
+        self._panel_text(grid, colors, 22, "y pulsa ENTER", COLOR_DIM)
+        chrono = self._format_chronometer(
+            self.clock.chronometer.value(self._time_now())
         )
+        self._panel_text(grid, colors, 24, "CRONÓMETRO", COLOR_SECOND)
+        self._panel_text(grid, colors, 25, chrono, COLOR_STATUS)
+        self._panel_text(grid, colors, 27, "ENTER solo = iniciar", COLOR_DIM)
         self._panel_text(
-            grid, colors, 25, f"MIN  {round(minute_angle)}°", COLOR_DIM
+            grid, colors, 29, f"SEG {round(second_angle)}°  MIN {round(minute_angle)}°  HORA {round(hour_angle)}°", COLOR_DIM
         )
-        self._panel_text(
-            grid, colors, 26, f"HORA {round(hour_angle)}°", COLOR_DIM
-        )
-        self._panel_text(grid, colors, 28, "Clic en la terminal", COLOR_DIM)
+        self._panel_text(grid, colors, 31, "Clic en la terminal", COLOR_DIM)
         self._write_frame(
             self._rows(grid, colors)[:self.frame_height - 1],
             clear=True,
@@ -556,7 +584,7 @@ class ClockCanvasApp:
             angles_y = 10
             title_y = 13
             first_option_y = 15
-            instruction_y = 25
+            instruction_y = 27
         else:
             status_y = 5
             angles_y = 6
@@ -591,9 +619,12 @@ class ClockCanvasApp:
                 "3 -1s",
                 "4 +10min",
                 "5 -10min",
-                "6 Reiniciar",
+                "6 Reiniciar reloj",
                 "7 Redibujar",
-                "8 Salir",
+                "8 Hora actual",
+                "9 Cronómetro iniciar/pausar",
+                "10 Cronómetro reiniciar",
+                "11 Salir",
             )
             for offset, option in enumerate(options):
                 self._centered_text(
@@ -604,9 +635,10 @@ class ClockCanvasApp:
                 "1 Iniciar/Reanudar",
                 "2 +1s        3 -1s",
                 "4 +10min     5 -10min",
-                "6 Reiniciar",
-                "7 Redibujar",
-                "8 Salir",
+                "6 Reiniciar reloj",
+                "7 Redibujar   8 Hora actual",
+                "9 Cronómetro  10 Reset",
+                "11 Salir",
             )
             for offset, option in enumerate(options):
                 self._centered_text(
