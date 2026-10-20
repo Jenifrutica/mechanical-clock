@@ -41,6 +41,31 @@ class ClockCanvasApp:
         self._fallback_seconds = 0.0
         self.terminal_lines = self._read_environment_int("LINES", 24)
         self.terminal_columns = self._read_environment_int("COLUMNS", 80)
+        self.size_file = self._read_environment_value("CLOCK_SIZE_FILE")
+        self._configure_layout()
+
+    def _read_environment_value(self, name):
+        prefix = (name + "=").encode()
+        try:
+            with open("/proc/self/environ", "rb") as file:
+                entries = file.read().split(b"\0")
+        except OSError:
+            return None
+        for entry in entries:
+            if entry.startswith(prefix):
+                return entry[len(prefix):].decode()
+        return None
+
+    def _read_environment_int(self, name, default):
+        value = self._read_environment_value(name)
+        if value is None:
+            return default
+        try:
+            return int(value)
+        except ValueError:
+            return default
+
+    def _configure_layout(self):
         self.frame_width = max(40, self.terminal_columns - 1)
         self.side_layout = self.terminal_columns >= 100 and self.terminal_lines >= 34
         self.full_layout = self.terminal_lines >= 34 and not self.side_layout
@@ -73,20 +98,29 @@ class ClockCanvasApp:
             self.panel_x = None
         self.top_padding = max(0, (self.terminal_lines - self.frame_height - 2) // 2)
 
-    def _read_environment_int(self, name, default):
-        prefix = (name + "=").encode()
+    def _refresh_terminal_size(self):
+        if not self.size_file:
+            return False
         try:
-            with open("/proc/self/environ", "rb") as file:
-                entries = file.read().split(b"\0")
+            with open(self.size_file, "r") as file:
+                parts = file.read().split()
         except OSError:
-            return default
-        for entry in entries:
-            if entry.startswith(prefix):
-                try:
-                    return int(entry[len(prefix):].decode())
-                except ValueError:
-                    return default
-        return default
+            return False
+        if len(parts) < 2:
+            return False
+        try:
+            lines = int(parts[0])
+            columns = int(parts[1])
+        except ValueError:
+            return False
+        if lines <= 0 or columns <= 0:
+            return False
+        if lines == self.terminal_lines and columns == self.terminal_columns:
+            return False
+        self.terminal_lines = lines
+        self.terminal_columns = columns
+        self._configure_layout()
+        return True
 
     def run(self):
         self._enter_screen()
@@ -196,6 +230,8 @@ class ClockCanvasApp:
                 fraction = 0.0
             elif fraction > 1.0:
                 fraction = 1.0
+            if self._refresh_terminal_size():
+                print("\033[2J\033[H", end="", flush=True)
             self._render_auto(fraction)
             self._wait_until(now + 0.1)
 
@@ -504,6 +540,7 @@ class ClockCanvasApp:
         return grid, colors
 
     def _render_menu(self):
+        self._refresh_terminal_size()
         if self.side_layout:
             self._render_side_menu()
             return
