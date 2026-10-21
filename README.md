@@ -20,9 +20,9 @@ Archivos:
 python3 main.py
 ```
 
-Al iniciar aparece un reloj de bienvenida y se pide la hora local en formato `HH:MM:SS`. No se lee el reloj del sistema: la hora inicial la escribe el usuario y luego avanza con un temporizador interno aproximado por conteo de ciclos.
+Al iniciar aparece un reloj de bienvenida y se pide la hora local en formato `HH:MM:SS`. La hora inicial la escribe el usuario. En Linux se usa `/proc/uptime` solo para el pulso y mantener la sincronización; en otros sistemas se usa un temporizador aproximado por conteo de ciclos.
 
-La resolución por defecto es `114 34`. Se puede cambiar desde el menú con la opción `0`. La velocidad del reloj es aproximada y depende del CPU.
+La resolución por defecto es `114 34`. Se puede cambiar desde el menú con la opción `0`. En Linux la sincronización es real; en otros sistemas la velocidad es aproximada y depende del CPU.
 
 ## Controles
 
@@ -49,7 +49,7 @@ Dentro de la opción `9`:
 - `6`: reiniciar.
 - `7`: volver al menú principal.
 
-Al elegir una duración o iniciar el temporizador, vuelve automáticamente a la pantalla del reloj y allí empieza la cuenta regresiva. Al llegar a cero aparece la alerta `¡TIEMPO CUMPLIDO!`, se emiten pitidos de terminal y se cierra con `Enter`; el temporizador queda terminado.
+Al elegir una duración o iniciar el temporizador, vuelve automáticamente a la pantalla del reloj y allí empieza la cuenta regresiva. Al llegar a cero aparece la alerta visual `¡TIEMPO CUMPLIDO!` y se cierra con `Enter`; el temporizador queda terminado. No se reproduce sonido porque el pitido dependía de la terminal y no era confiable.
 
 Solo se acepta un dígito del 0 al 9 en el menú principal. El menú es bloqueante, así que mientras espera un comando el reloj no se redibuja.
 

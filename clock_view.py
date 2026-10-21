@@ -43,7 +43,7 @@ class ClockCanvasApp:
         self.terminal_lines = 34
         self._software_seconds = 0.0
         self._frame_delta = 0.1
-        self._spin_per_frame = 6_500_000
+        self._spin_per_frame = 5_500_000
         self._configure_layout()
 
     def _ask_terminal_size(self):
@@ -149,18 +149,30 @@ class ClockCanvasApp:
 
     def _run_loop(self):
         print("\033[2J\033[H", end="", flush=True)
+        source_start = self._read_uptime()
+        source_ok = source_start is not None
         next_tick = 1.0
         while True:
             try:
+                if source_ok:
+                    current = self._read_uptime()
+                    if current is None:
+                        source_ok = False
+                    else:
+                        self._software_seconds = current - source_start
                 fraction = self._software_seconds - (next_tick - 1.0)
                 if fraction < 0.0:
                     fraction = 0.0
                 elif fraction > 1.0:
                     fraction = 1.0
                 self._render_auto(fraction)
-                for _ in range(self._spin_per_frame):
-                    pass
-                self._software_seconds += self._frame_delta
+                if source_ok:
+                    for _ in range(3_000_000):
+                        pass
+                else:
+                    for _ in range(self._spin_per_frame):
+                        pass
+                    self._software_seconds += self._frame_delta
                 while self._software_seconds >= next_tick:
                     self.clock.tick_forward()
                     next_tick += 1.0
@@ -189,10 +201,6 @@ class ClockCanvasApp:
         print("")
         print("        ¡TIEMPO CUMPLIDO!")
         print("")
-        for _ in range(6):
-            print("\a", end="", flush=True)
-            for _ in range(2_000_000):
-                pass
         try:
             input("Presiona Enter para cerrar la alerta: ")
         except (EOFError, KeyboardInterrupt):
@@ -344,6 +352,13 @@ class ClockCanvasApp:
 
     def _leave_screen(self):
         print("\033[0m\033[?25h\033[?1049l", end="", flush=True)
+
+    def _read_uptime(self):
+        try:
+            with open("/proc/uptime", "r") as file:
+                return float(file.read().split()[0])
+        except OSError:
+            return None
 
     def _time_now(self):
         return self._software_seconds
