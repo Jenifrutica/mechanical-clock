@@ -119,9 +119,25 @@ class ClockCanvasApp:
             self.panel_x = None
         self.top_padding = max(0, (self.terminal_lines - self.frame_height - 2) // 2)
 
-    def run(self):
-        self._ask_terminal_size()
+    def _welcome(self):
+        print("\033[2J\033[H")
+        print("        .-\"\"\"-." )
+        print("       /  _ _  \\")
+        print("      |  (o o)  |")
+        print("       \\   ^   /")
+        print("        '-...-'")
+        print("         /| |\\")
+        print("        /_| |_\\")
+        print("")
+        print("¡Hola! Soy tu reloj.")
+        print("Antes de comenzar, necesito la hora local en formato HH:MM:SS.")
+        print("")
         self._ask_time()
+        print("")
+        print("Perfecto. ¡Vamos!")
+
+    def run(self):
+        self._welcome()
         self.clock.start()
         self._enter_screen()
         try:
@@ -148,8 +164,114 @@ class ClockCanvasApp:
                 while self._software_seconds >= next_tick:
                     self.clock.tick_forward()
                     next_tick += 1.0
+                self.clock.timer.update(self._software_seconds)
+                if self.clock.timer.finished:
+                    self._timer_alert()
             except KeyboardInterrupt:
                 self._blocking_menu()
+
+    def _format_timer(self, seconds):
+        total = int(seconds + 0.999)
+        hours = total // 3600
+        minutes = (total % 3600) // 60
+        secs = total % 60
+        if hours:
+            return f"{hours:02d}:{minutes:02d}:{secs:02d}"
+        return f"{minutes:02d}:{secs:02d}"
+
+    def _timer_alert(self):
+        print("\033[2J\033[H", end="", flush=True)
+        print("        .-\"\"\"-." )
+        print("       /  ! !  \\")
+        print("      |  (o o)  |")
+        print("       \\   ^   /")
+        print("        '-...-'")
+        print("")
+        print("        ¡TIEMPO CUMPLIDO!")
+        print("")
+        try:
+            input("Presiona Enter para cerrar la alerta: ")
+        except (EOFError, KeyboardInterrupt):
+            pass
+        self.clock.timer.reset()
+        print("\033[2J\033[H", end="", flush=True)
+
+    def _timer_menu(self):
+        while True:
+            timer = self.clock.timer
+            value = timer.value(self._time_now())
+            print("\033[2J\033[H", end="", flush=True)
+            print("TEMPORIZADOR")
+            print("Duración:", self._format_timer(timer.duration) if timer.duration else "--:--")
+            print("Restante:", self._format_timer(value) if timer.duration else "--:--")
+            if timer.running:
+                print("Estado: ACTIVO")
+            elif timer.duration:
+                print("Estado: PAUSADO")
+            else:
+                print("Estado: SIN CONFIGURAR")
+            print("")
+            print("1 10 minutos")
+            print("2 1 minuto")
+            print("3 30 segundos")
+            print("4 Tiempo personalizado")
+            print("5 Iniciar/Pausar")
+            print("6 Reiniciar")
+            print("7 Volver al menú")
+            choice = input("Opción (1-7): ").strip()
+            if len(choice) != 1 or choice not in "1234567":
+                print("Solo se permite un número del 1 al 7")
+                input("Enter para continuar...")
+                continue
+            if choice == "1":
+                timer.set_duration(600)
+                timer.start(self._time_now())
+            elif choice == "2":
+                timer.set_duration(60)
+                timer.start(self._time_now())
+            elif choice == "3":
+                timer.set_duration(30)
+                timer.start(self._time_now())
+            elif choice == "4":
+                text = input("Duración en segundos: ").strip()
+                if text.isdigit() and int(text) > 0:
+                    timer.set_duration(int(text))
+                    timer.start(self._time_now())
+                else:
+                    print("Duración inválida")
+                    input("Enter para continuar...")
+            elif choice == "5":
+                if timer.duration <= 0:
+                    print("Primero configura una duración")
+                    input("Enter para continuar...")
+                else:
+                    timer.toggle(self._time_now())
+            elif choice == "6":
+                timer.reset()
+            elif choice == "7":
+                return
+
+    def _config_menu(self):
+        print("\033[2J\033[H", end="", flush=True)
+        print("CONFIGURACIÓN")
+        print(f"Resolución actual: {self.terminal_columns} x {self.terminal_lines}")
+        text = input("Nuevo tamaño (columnas filas) o Enter para volver: ").strip()
+        if not text:
+            return
+        parts = text.split()
+        if len(parts) != 2:
+            return
+        try:
+            columns = int(parts[0])
+            lines = int(parts[1])
+        except ValueError:
+            return
+        if columns < 40 or lines < 20:
+            return
+        self.terminal_columns = columns
+        self.terminal_lines = lines
+        self._configure_layout()
+        input("Configuración aplicada. Enter para continuar...")
 
     def _blocking_menu(self):
         self.menu_mode = True
@@ -193,9 +315,9 @@ class ClockCanvasApp:
             self.clock.start()
             self.menu_mode = False
         elif choice == "9":
-            self.clock.chronometer.toggle(self._time_now())
+            self._timer_menu()
         elif choice == "0":
-            self.clock.chronometer.reset()
+            self._config_menu()
 
     def _enter_screen(self):
         print(
@@ -209,13 +331,6 @@ class ClockCanvasApp:
 
     def _time_now(self):
         return self._software_seconds
-
-    def _format_chronometer(self, seconds):
-        total = int(seconds)
-        minutes = total // 60
-        remainder = total % 60
-        tenths = int((seconds - total) * 10)
-        return f"{minutes:02d}:{remainder:02d}.{tenths}"
 
     def _format_clock_time(self, data, fraction):
         hour = 0 if data["hours"] == 12 else data["hours"]
@@ -409,10 +524,22 @@ class ClockCanvasApp:
             grid, colors, 12, f"HORA {round(hour_angle)}°", COLOR_STATUS
         )
 
-        self._panel_text(grid, colors, 15, "PISTAS", COLOR_SECOND)
-        self._panel_text(grid, colors, 16, "60 / 60 / 12", COLOR_DIM)
-        self._panel_text(grid, colors, 17, "ACARREO", COLOR_SECOND)
-        self._panel_text(grid, colors, 18, "Seg -> Min -> Hora", COLOR_DIM)
+        timer_value = self.clock.timer.value(self._time_now())
+        if self.clock.timer.duration:
+            timer_label = self._format_timer(timer_value)
+            if self.clock.timer.running:
+                timer_state = "ACTIVO"
+            else:
+                timer_state = "PAUSADO"
+            timer_duration = self._format_timer(self.clock.timer.duration)
+        else:
+            timer_label = "--:--"
+            timer_state = "SIN CONFIGURAR"
+            timer_duration = "--:--"
+        self._panel_text(grid, colors, 15, "TEMPORIZADOR", COLOR_SECOND)
+        self._panel_text(grid, colors, 16, timer_label, COLOR_STATUS)
+        self._panel_text(grid, colors, 17, timer_state, COLOR_DIM)
+        self._panel_text(grid, colors, 18, f"Duración {timer_duration}", COLOR_DIM)
 
         self._panel_text(grid, colors, 21, "CONTROLES", COLOR_SECOND)
         self._panel_text(grid, colors, 22, "Ctrl+C menú", COLOR_STATUS)
@@ -446,21 +573,25 @@ class ClockCanvasApp:
             "6 Reiniciar reloj",
             "7 Redibujar",
             "8 Ajustar hora",
-            "9 Cronómetro iniciar/pausar",
-            "0 Cronómetro reiniciar",
+            "9 Temporizador",
+            "0 Configuración",
         )
         for offset, option in enumerate(options):
             self._panel_text(grid, colors, 9 + offset, option, COLOR_STATUS)
         self._panel_text(grid, colors, 20, "Escribe el número", COLOR_DIM)
         self._panel_text(grid, colors, 21, "y pulsa ENTER", COLOR_DIM)
-        chrono_value = self.clock.chronometer.value(self._time_now())
-        chrono_state = "▶" if self.clock.chronometer.running() else "⏸"
+        timer_value = self.clock.timer.value(self._time_now())
+        timer_label = self._format_timer(timer_value) if self.clock.timer.duration else "--:--"
+        if self.clock.timer.running:
+            timer_state = "ACTIVO"
+        elif self.clock.timer.duration:
+            timer_state = "PAUSADO"
+        else:
+            timer_state = "SIN CONFIGURAR"
         self._panel_text(
-            grid, colors, 23, f"CRONÓMETRO {chrono_state}", COLOR_SECOND
+            grid, colors, 23, f"TEMPORIZADOR {timer_state}", COLOR_SECOND
         )
-        self._panel_text(
-            grid, colors, 24, self._format_chronometer(chrono_value), COLOR_STATUS
-        )
+        self._panel_text(grid, colors, 24, timer_label, COLOR_STATUS)
         self._panel_text(
             grid,
             colors,
@@ -559,8 +690,8 @@ class ClockCanvasApp:
                 "6 Reiniciar reloj",
                 "7 Redibujar",
                 "8 Ajustar hora",
-                "9 Cronómetro iniciar/pausar",
-                "0 Cronómetro reiniciar",
+                "9 Temporizador",
+                "0 Configuración",
             )
             for offset, option in enumerate(options):
                 self._centered_text(
@@ -573,7 +704,7 @@ class ClockCanvasApp:
                 "4 +10min     5 -10min",
                 "6 Reiniciar reloj",
                 "7 Redibujar   8 Hora actual",
-                "9 Cronómetro   0 Reset",
+                "9 Temporizador  0 Configuración",
             )
             for offset, option in enumerate(options):
                 self._centered_text(

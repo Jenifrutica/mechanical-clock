@@ -20,14 +20,9 @@ Archivos:
 python3 main.py
 ```
 
-Al iniciar, la aplicación pide:
+Al iniciar aparece un reloj de bienvenida y se pide la hora local en formato `HH:MM:SS`. No se lee el reloj del sistema: la hora inicial la escribe el usuario y luego avanza con un temporizador interno aproximado por conteo de ciclos.
 
-1. Tamaño de la terminal en columnas y filas. Por defecto `114 34`; en una consola de 80×24 escribe `80 24`.
-2. Hora local en formato `HH:MM:SS`.
-
-No se lee la hora del sistema con `/proc` ni con bibliotecas. La hora inicial la escribe el usuario y luego el reloj avanza con un temporizador interno aproximado por conteo de ciclos. La velocidad puede variar según el CPU.
-
-La esfera tiene números del 1 al 12. El cronómetro se controla únicamente desde el menú y no arranca solo.
+La resolución por defecto es `114 34`. Se puede cambiar desde el menú con la opción `0`.
 
 ## Controles
 
@@ -37,18 +32,30 @@ La esfera tiene números del 1 al 12. El cronómetro se controla únicamente des
 - `3`: retroceder 1 segundo.
 - `4`: avanzar 10 minutos.
 - `5`: retroceder 10 minutos.
-- `6`: reiniciar a `12:00:00`.
+- `6`: reiniciar el reloj a `12:00:00`.
 - `7`: redibujar.
 - `8`: ajustar manualmente la hora local.
-- `9`: iniciar/pausar el cronómetro.
-- `0`: reiniciar el cronómetro.
+- `9`: abrir el temporizador.
+- `0`: configuración de resolución.
 
-Solo se acepta un dígito del 0 al 9. No se aceptan letras ni varios números.
+## Temporizador
 
-El menú usa `input()` bloqueante, por lo que mientras espera un comando el reloj no se redibuja. Al volver al reloj continúa desde su estado mecánico.
+Dentro de la opción `9`:
+
+- `1`: 10 minutos.
+- `2`: 1 minuto.
+- `3`: 30 segundos.
+- `4`: tiempo personalizado en segundos.
+- `5`: iniciar/pausar.
+- `6`: reiniciar.
+- `7`: volver.
+
+Al cumplirse el tiempo se muestra una alerta. Se cierra presionando `Enter`.
+
+Solo se acepta un dígito del 0 al 9 en el menú principal. El menú es bloqueante, así que mientras espera un comando el reloj no se redibuja.
 
 ## Versión Linux
 
-La versión que usa `/proc/stat` y `/proc/uptime` quedó guardada en:
+La versión que usa `/proc/stat` y `/proc/uptime` quedó guardada como respaldo en:
 
 https://github.com/Jenifrutica/mechanical-clock-linux

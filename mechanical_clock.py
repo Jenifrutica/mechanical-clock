@@ -3,37 +3,75 @@ from hand import Hand
 from gear_train import GearTrain
 
 
-class Chronometer:
+class CountdownTimer:
     def __init__(self):
-        self.elapsed = 0.0
+        self.duration = 0.0
+        self.remaining = 0.0
         self.started_at = None
+        self.running = False
+        self.finished = False
 
-    def running(self):
-        return self.started_at is not None
+    def set_duration(self, seconds):
+        self.duration = float(seconds)
+        self.remaining = float(seconds)
+        self.started_at = None
+        self.running = False
+        self.finished = False
 
     def start(self, now):
-        if self.started_at is None:
-            self.started_at = now
+        if self.duration <= 0.0:
+            return
+        if self.remaining <= 0.0:
+            self.remaining = self.duration
+        self.started_at = now
+        self.running = True
+        self.finished = False
 
     def pause(self, now):
-        if self.started_at is not None:
-            self.elapsed += now - self.started_at
+        if self.running:
+            self.update(now)
+            self.running = False
             self.started_at = None
 
     def toggle(self, now):
-        if self.started_at is None:
-            self.start(now)
-        else:
+        if self.running:
             self.pause(now)
+        else:
+            self.start(now)
 
     def reset(self):
-        self.elapsed = 0.0
+        self.remaining = self.duration
+        self.running = False
         self.started_at = None
+        self.finished = False
+
+    def clear(self):
+        self.duration = 0.0
+        self.remaining = 0.0
+        self.running = False
+        self.started_at = None
+        self.finished = False
+
+    def update(self, now):
+        if not self.running:
+            return
+        value = self.remaining - (now - self.started_at)
+        if value <= 0.0:
+            self.remaining = 0.0
+            self.running = False
+            self.started_at = None
+            self.finished = True
+        else:
+            self.remaining = value
+            self.started_at = now
 
     def value(self, now):
-        if self.started_at is None:
-            return self.elapsed
-        return self.elapsed + (now - self.started_at)
+        if not self.running:
+            return self.remaining
+        value = self.remaining - (now - self.started_at)
+        if value < 0.0:
+            return 0.0
+        return value
 
 
 class MechanicalClock:
@@ -53,7 +91,7 @@ class MechanicalClock:
         self.gear_train.attach(self.minute_hand)
         self.gear_train.attach(self.hour_hand)
         self.is_running = False
-        self.chronometer = Chronometer()
+        self.timer = CountdownTimer()
         self.reset_midnight()
 
     def start(self):
