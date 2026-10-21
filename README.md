@@ -33,7 +33,7 @@ La resolución por defecto es `114 34`. Se puede cambiar desde el menú con la o
 - `4`: avanzar 10 minutos.
 - `5`: retroceder 10 minutos.
 - `6`: reiniciar el reloj a `12:00:00`.
-- `7`: redibujar.
+- `7`: redibujar el menú.
 - `8`: ajustar manualmente la hora local.
 - `9`: abrir el temporizador.
 - `0`: configuración de resolución.
@@ -48,9 +48,9 @@ Dentro de la opción `9`:
 - `4`: tiempo personalizado en segundos.
 - `5`: iniciar/pausar.
 - `6`: reiniciar.
-- `7`: volver.
+- `7`: volver al menú principal.
 
-Al cumplirse el tiempo se muestra una alerta. Se cierra presionando `Enter`.
+Al elegir una duración o iniciar el temporizador, vuelve automáticamente a la pantalla del reloj y allí empieza la cuenta regresiva. Al llegar a cero aparece la alerta `¡TIEMPO CUMPLIDO!`; se cierra con `Enter` y el temporizador queda terminado.
 
 Solo se acepta un dígito del 0 al 9 en el menú principal. El menú es bloqueante, así que mientras espera un comando el reloj no se redibuja.
 

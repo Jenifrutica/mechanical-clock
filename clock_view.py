@@ -193,7 +193,7 @@ class ClockCanvasApp:
             input("Presiona Enter para cerrar la alerta: ")
         except (EOFError, KeyboardInterrupt):
             pass
-        self.clock.timer.reset()
+        self.clock.timer.clear()
         print("\033[2J\033[H", end="", flush=True)
 
     def _timer_menu(self):
@@ -226,26 +226,38 @@ class ClockCanvasApp:
             if choice == "1":
                 timer.set_duration(600)
                 timer.start(self._time_now())
+                self.menu_mode = False
+                return
             elif choice == "2":
                 timer.set_duration(60)
                 timer.start(self._time_now())
+                self.menu_mode = False
+                return
             elif choice == "3":
                 timer.set_duration(30)
                 timer.start(self._time_now())
+                self.menu_mode = False
+                return
             elif choice == "4":
                 text = input("Duración en segundos: ").strip()
                 if text.isdigit() and int(text) > 0:
                     timer.set_duration(int(text))
                     timer.start(self._time_now())
-                else:
-                    print("Duración inválida")
-                    input("Enter para continuar...")
+                    self.menu_mode = False
+                    return
+                print("Duración inválida")
+                input("Enter para continuar...")
             elif choice == "5":
                 if timer.duration <= 0:
                     print("Primero configura una duración")
                     input("Enter para continuar...")
                 else:
-                    timer.toggle(self._time_now())
+                    if timer.running:
+                        timer.pause(self._time_now())
+                    else:
+                        timer.start(self._time_now())
+                        self.menu_mode = False
+                        return
             elif choice == "6":
                 timer.reset()
             elif choice == "7":
