@@ -1,3 +1,5 @@
+from clock_pacing import PacingClock
+
 PI = 3.141592653589793
 
 RESET = "\033[0m"
@@ -41,9 +43,7 @@ class ClockCanvasApp:
         self.menu_error = ""
         self.terminal_columns = 114
         self.terminal_lines = 34
-        self._software_seconds = 0.0
-        self._frame_delta = 0.1
-        self._spin_per_frame = 5_500_000
+        self.pacing = PacingClock()
         self._configure_layout()
 
     def _ask_terminal_size(self):
@@ -149,34 +149,21 @@ class ClockCanvasApp:
 
     def _run_loop(self):
         print("\033[2J\033[H", end="", flush=True)
-        source_start = self._read_uptime()
-        source_ok = source_start is not None
         next_tick = 1.0
         while True:
             try:
-                if source_ok:
-                    current = self._read_uptime()
-                    if current is None:
-                        source_ok = False
-                    else:
-                        self._software_seconds = current - source_start
-                fraction = self._software_seconds - (next_tick - 1.0)
+                fraction = self.pacing.now() - (next_tick - 1.0)
                 if fraction < 0.0:
                     fraction = 0.0
                 elif fraction > 1.0:
                     fraction = 1.0
                 self._render_auto(fraction)
-                if source_ok:
-                    for _ in range(3_000_000):
-                        pass
-                else:
-                    for _ in range(self._spin_per_frame):
-                        pass
-                    self._software_seconds += self._frame_delta
-                while self._software_seconds >= next_tick:
+                self.pacing.wait_frame()
+                self.pacing.advance()
+                while self.pacing.now() >= next_tick:
                     self.clock.tick_forward()
                     next_tick += 1.0
-                self.clock.timer.update(self._software_seconds)
+                self.clock.timer.update(self.pacing.now())
                 if self.clock.timer.finished:
                     self._timer_alert()
             except KeyboardInterrupt:
@@ -276,26 +263,63 @@ class ClockCanvasApp:
                 return
 
     def _config_menu(self):
-        print("\033[2J\033[H", end="", flush=True)
-        print("CONFIGURACIÓN")
-        print(f"Resolución actual: {self.terminal_columns} x {self.terminal_lines}")
-        text = input("Nuevo tamaño (columnas filas) o Enter para volver: ").strip()
-        if not text:
-            return
-        parts = text.split()
-        if len(parts) != 2:
-            return
-        try:
-            columns = int(parts[0])
-            lines = int(parts[1])
-        except ValueError:
-            return
-        if columns < 40 or lines < 20:
-            return
-        self.terminal_columns = columns
-        self.terminal_lines = lines
-        self._configure_layout()
-        input("Configuración aplicada. Enter para continuar...")
+        while True:
+            print("\033[2J\033[H", end="", flush=True)
+            print("CONFIGURACIÓN")
+            print(f"Resolución: {self.terminal_columns} x {self.terminal_lines}")
+            print(f"Velocidad: {self.pacing.spin_per_frame} ciclos/frame")
+            print("")
+            print("1 Cambiar resolución")
+            print("2 Calibrar velocidad")
+            print("3 Volver")
+            choice = input("Opción (1-3): ").strip()
+            if len(choice) != 1 or choice not in "123":
+                print("Solo se permite un número del 1 al 3")
+                input("Enter para continuar...")
+                continue
+            if choice == "1":
+                text = input("Nuevo tamaño (columnas filas): ").strip()
+                parts = text.split()
+                if len(parts) == 2:
+                    try:
+                        columns = int(parts[0])
+                        lines = int(parts[1])
+                    except ValueError:
+                        columns = 0
+                        lines = 0
+                    if columns >= 40 and lines >= 20:
+                        self.terminal_columns = columns
+                        self.terminal_lines = lines
+                        self._configure_layout()
+                        input("Resolución aplicada. Enter para continuar...")
+            elif choice == "2":
+                print("")
+                print("Mide 10 segundos reales y pulsa Ctrl+C al terminar.")
+                print("Usa un reloj o el teléfono como referencia.")
+                input("Enter para comenzar la calibración...")
+                start = self.pacing.now()
+                try:
+                    while True:
+                        elapsed = self.pacing.now() - start
+                        print(f"\rTiempo interno: {elapsed:5.1f} s", end="", flush=True)
+                        self.pacing.wait_frame()
+                        self.pacing.advance()
+                except KeyboardInterrupt:
+                    elapsed = self.pacing.now() - start
+                    print("")
+                    text = input("Segundos reales transcurridos [10]: ").strip()
+                    if not text:
+                        real = 10.0
+                    else:
+                        try:
+                            real = float(text)
+                        except ValueError:
+                            real = 10.0
+                    self.pacing.calibrate(real, elapsed)
+                    print(f"Velocidad ajustada: {self.pacing.spin_per_frame} ciclos/frame")
+                    input("Enter para continuar...")
+            elif choice == "3":
+                return
 
     def _blocking_menu(self):
         self.menu_mode = True
@@ -353,15 +377,8 @@ class ClockCanvasApp:
     def _leave_screen(self):
         print("\033[0m\033[?25h\033[?1049l", end="", flush=True)
 
-    def _read_uptime(self):
-        try:
-            with open("/proc/uptime", "r") as file:
-                return float(file.read().split()[0])
-        except OSError:
-            return None
-
     def _time_now(self):
-        return self._software_seconds
+        return self.pacing.now()
 
     def _format_clock_time(self, data, fraction):
         hour = 0 if data["hours"] == 12 else data["hours"]
