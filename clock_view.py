@@ -37,34 +37,54 @@ def _cos_deg(degrees):
 class ClockCanvasApp:
     def __init__(self, clock):
         self.clock = clock
-        self._use_proc_uptime = True
-        self._fallback_seconds = 0.0
         self.menu_mode = False
         self.menu_error = ""
-        self.terminal_lines = self._read_environment_int("LINES", 34)
-        self.terminal_columns = self._read_environment_int("COLUMNS", 114)
+        self.terminal_columns = 114
+        self.terminal_lines = 34
+        self._software_seconds = 0.0
+        self._frame_delta = 0.1
+        self._spin_per_frame = 5_000_000
         self._configure_layout()
 
-    def _read_environment_value(self, name):
-        prefix = (name + "=").encode()
+    def _ask_terminal_size(self):
+        text = input("Tamaño de terminal (columnas filas) [114 34]: ").strip()
+        if not text:
+            return
+        parts = text.split()
+        if len(parts) != 2:
+            return
         try:
-            with open("/proc/self/environ", "rb") as file:
-                entries = file.read().split(b"\0")
-        except OSError:
-            return None
-        for entry in entries:
-            if entry.startswith(prefix):
-                return entry[len(prefix):].decode()
-        return None
-
-    def _read_environment_int(self, name, default):
-        value = self._read_environment_value(name)
-        if value is None:
-            return default
-        try:
-            return int(value)
+            columns = int(parts[0])
+            lines = int(parts[1])
         except ValueError:
-            return default
+            return
+        if columns < 40 or lines < 20:
+            return
+        self.terminal_columns = columns
+        self.terminal_lines = lines
+        self._configure_layout()
+
+    def _ask_time(self):
+        while True:
+            text = input("Hora local (HH:MM:SS): ").strip()
+            parts = text.split(":")
+            if len(parts) not in (2, 3):
+                print("Formato inválido. Usa HH:MM:SS")
+                continue
+            if not all(part.isdigit() for part in parts):
+                print("Formato inválido. Usa solo números")
+                continue
+            hour = int(parts[0])
+            minute = int(parts[1])
+            second = int(parts[2]) if len(parts) == 3 else 0
+            if not (0 <= hour <= 23 and 0 <= minute <= 59 and 0 <= second <= 59):
+                print("Hora inválida")
+                continue
+            hour_12 = hour % 12
+            if hour_12 == 0:
+                hour_12 = 12
+            self.clock.set_time(hour_12, minute, second)
+            return
 
     def _configure_layout(self):
         self.frame_width = max(40, self.terminal_columns - 1)
@@ -100,10 +120,11 @@ class ClockCanvasApp:
         self.top_padding = max(0, (self.terminal_lines - self.frame_height - 2) // 2)
 
     def run(self):
+        self._ask_terminal_size()
+        self._ask_time()
+        self.clock.start()
         self._enter_screen()
         try:
-            self._synchronize_clock()
-            self.clock.start()
             self._run_loop()
         except KeyboardInterrupt:
             pass
@@ -112,27 +133,21 @@ class ClockCanvasApp:
 
     def _run_loop(self):
         print("\033[2J\033[H", end="", flush=True)
-        now = self._time_now()
-        epoch = self._read_epoch()
-        if epoch is not None:
-            next_tick = now + (1.0 - (epoch - int(epoch)))
-        else:
-            next_tick = now + 1.0
-        if next_tick <= now:
-            next_tick = now + 1.0
+        next_tick = 1.0
         while True:
             try:
-                now = self._time_now()
-                while now >= next_tick:
-                    self.clock.tick_forward()
-                    next_tick += 1.0
-                fraction = now - (next_tick - 1.0)
+                fraction = self._software_seconds - (next_tick - 1.0)
                 if fraction < 0.0:
                     fraction = 0.0
                 elif fraction > 1.0:
                     fraction = 1.0
                 self._render_auto(fraction)
-                self._wait_until(now + 0.1)
+                for _ in range(self._spin_per_frame):
+                    pass
+                self._software_seconds += self._frame_delta
+                while self._software_seconds >= next_tick:
+                    self.clock.tick_forward()
+                    next_tick += 1.0
             except KeyboardInterrupt:
                 self._blocking_menu()
 
@@ -174,7 +189,7 @@ class ClockCanvasApp:
         elif choice == "7":
             pass
         elif choice == "8":
-            self._synchronize_clock()
+            self._ask_time()
             self.clock.start()
             self.menu_mode = False
         elif choice == "9":
@@ -192,61 +207,8 @@ class ClockCanvasApp:
     def _leave_screen(self):
         print("\033[0m\033[?25h\033[?1049l", end="", flush=True)
 
-    def _now(self):
-        if self._use_proc_uptime:
-            try:
-                with open("/proc/uptime", "r") as file:
-                    return float(file.read().split()[0])
-            except OSError:
-                self._use_proc_uptime = False
-        return None
-
-    def _read_epoch(self):
-        boot_time = None
-        try:
-            with open("/proc/stat", "r") as file:
-                for line in file:
-                    if line.startswith("btime "):
-                        boot_time = int(line.split()[1])
-                        break
-        except OSError:
-            return None
-        uptime = self._now()
-        if boot_time is None or uptime is None:
-            return None
-        return boot_time + uptime
-
-    def _synchronize_clock(self):
-        epoch = self._read_epoch()
-        if epoch is None:
-            return
-        local_seconds = int(epoch) - 5 * 3600
-        seconds_of_day = local_seconds % 86400
-        hour_24 = seconds_of_day // 3600
-        minute = (seconds_of_day % 3600) // 60
-        second = seconds_of_day % 60
-        hour_12 = hour_24 % 12
-        if hour_12 == 0:
-            hour_12 = 12
-        self.clock.set_time(hour_12, minute, second)
-
-    def _wait_until(self, target):
-        while True:
-            current = self._now()
-            if current is None:
-                for _ in range(1000000):
-                    pass
-                return
-            if current >= target:
-                return
-            for _ in range(2000):
-                pass
-
     def _time_now(self):
-        now = self._now()
-        if now is None:
-            return self._fallback_seconds
-        return now
+        return self._software_seconds
 
     def _format_chronometer(self, seconds):
         total = int(seconds)
@@ -433,7 +395,7 @@ class ClockCanvasApp:
         mode = "MARCHA" if data["running"] else "PAUSA"
         time_text = self._format_clock_time(data, fraction)
         self._panel_text(grid, colors, 3, time_text, COLOR_STATUS)
-        self._panel_text(grid, colors, 4, "Colombia (UTC-5)", COLOR_DIM)
+        self._panel_text(grid, colors, 4, "Hora local", COLOR_DIM)
         self._panel_mode(grid, colors, 6, mode, data["running"])
 
         self._panel_text(grid, colors, 9, "ÁNGULOS", COLOR_SECOND)
@@ -457,7 +419,7 @@ class ClockCanvasApp:
         self._panel_text(grid, colors, 23, "2/3  ±1s", COLOR_DIM)
         self._panel_text(grid, colors, 24, "4/5  ±10min", COLOR_DIM)
         self._panel_text(grid, colors, 25, "6  reiniciar reloj", COLOR_DIM)
-        self._panel_text(grid, colors, 26, "8  hora actual", COLOR_DIM)
+        self._panel_text(grid, colors, 26, "8  ajustar hora", COLOR_DIM)
         return grid, colors
 
     def _render_side_menu(self, fraction):
@@ -472,7 +434,7 @@ class ClockCanvasApp:
         mode = "MARCHA" if data["running"] else "PAUSA"
         time_text = self._format_clock_time(data, fraction)
         self._panel_text(grid, colors, 3, f"HORA {time_text}", COLOR_STATUS)
-        self._panel_text(grid, colors, 4, "Colombia (UTC-5)", COLOR_DIM)
+        self._panel_text(grid, colors, 4, "Hora local", COLOR_DIM)
         self._panel_mode(grid, colors, 5, mode, data["running"])
         self._panel_text(grid, colors, 7, "MENÚ", COLOR_SECOND)
         options = (
@@ -483,7 +445,7 @@ class ClockCanvasApp:
             "5 -10min",
             "6 Reiniciar reloj",
             "7 Redibujar",
-            "8 Hora actual",
+            "8 Ajustar hora",
             "9 Cronómetro iniciar/pausar",
             "0 Cronómetro reiniciar",
         )
@@ -526,7 +488,7 @@ class ClockCanvasApp:
         mode = "MARCHA" if data["running"] else "PAUSA"
         time_text = f"{data['hours']:02d}:{data['minutes']:02d}:{data['seconds']:02d}"
         footer = (
-            f"{time_text} Colombia {mode} | "
+            f"{time_text} Local {mode} | "
             f"S {round(second_angle)}° M {round(minute_angle)}° H {round(hour_angle)}° | "
             "Ctrl+C"
         )
@@ -567,7 +529,7 @@ class ClockCanvasApp:
             first_option_y = 12
             instruction_y = 20
 
-        status = f"HORA {time_text}    COLOMBIA (UTC-5)    MODO {mode}"
+        status = f"HORA {time_text}    HORA LOCAL    MODO {mode}"
         self._centered_text(grid, colors, status_y, status, COLOR_STATUS)
         status_x = (self.frame_width - len(status)) // 2
         self._put_text(
@@ -596,7 +558,7 @@ class ClockCanvasApp:
                 "5 -10min",
                 "6 Reiniciar reloj",
                 "7 Redibujar",
-                "8 Hora actual",
+                "8 Ajustar hora",
                 "9 Cronómetro iniciar/pausar",
                 "0 Cronómetro reiniciar",
             )

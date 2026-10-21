@@ -2,7 +2,7 @@
 
 ## Código
 
-El proyecto está hecho únicamente en Python. Para no dejar todo en un solo archivo, se divide en módulos y los únicos imports permitidos son los archivos locales del proyecto. No se usan bibliotecas estándar ni librerías externas, ni archivos shell, ni Docker.
+El proyecto está hecho únicamente en Python. Para no dejar todo en un solo archivo, se divide en módulos y los únicos imports permitidos son los archivos locales del proyecto. No se usan bibliotecas estándar, librerías externas, archivos shell ni Docker.
 
 Archivos:
 
@@ -20,7 +20,14 @@ Archivos:
 python3 main.py
 ```
 
-Al abrir, el reloj inicia en marcha automática en hora Colombia (UTC-5). La esfera tiene números del 1 al 12. El cronómetro se controla únicamente desde el menú y no arranca solo.
+Al iniciar, la aplicación pide:
+
+1. Tamaño de la terminal en columnas y filas. Por defecto `114 34`; en una consola de 80×24 escribe `80 24`.
+2. Hora local en formato `HH:MM:SS`.
+
+No se lee la hora del sistema con `/proc` ni con bibliotecas. La hora inicial la escribe el usuario y luego el reloj avanza con un temporizador interno aproximado por conteo de ciclos. La velocidad puede variar según el CPU.
+
+La esfera tiene números del 1 al 12. El cronómetro se controla únicamente desde el menú y no arranca solo.
 
 ## Controles
 
@@ -32,10 +39,16 @@ Al abrir, el reloj inicia en marcha automática en hora Colombia (UTC-5). La esf
 - `5`: retroceder 10 minutos.
 - `6`: reiniciar a `12:00:00`.
 - `7`: redibujar.
-- `8`: volver a la hora actual.
+- `8`: ajustar manualmente la hora local.
 - `9`: iniciar/pausar el cronómetro.
 - `0`: reiniciar el cronómetro.
 
 Solo se acepta un dígito del 0 al 9. No se aceptan letras ni varios números.
 
-El menú usa `input()` bloqueante, por lo que mientras espera un comando el reloj no se redibuja. Al volver al reloj continúa desde su estado mecánico. El tamaño de la terminal se toma de `LINES` y `COLUMNS` si están definidas; por defecto usa 114×34.
+El menú usa `input()` bloqueante, por lo que mientras espera un comando el reloj no se redibuja. Al volver al reloj continúa desde su estado mecánico.
+
+## Versión Linux
+
+La versión que usa `/proc/stat` y `/proc/uptime` quedó guardada en:
+
+https://github.com/Jenifrutica/mechanical-clock-linux
