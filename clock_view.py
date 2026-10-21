@@ -43,7 +43,7 @@ class ClockCanvasApp:
         self.terminal_lines = 34
         self._software_seconds = 0.0
         self._frame_delta = 0.1
-        self._spin_per_frame = 5_000_000
+        self._spin_per_frame = 6_500_000
         self._configure_layout()
 
     def _ask_terminal_size(self):
@@ -189,6 +189,10 @@ class ClockCanvasApp:
         print("")
         print("        ¡TIEMPO CUMPLIDO!")
         print("")
+        for _ in range(6):
+            print("\a", end="", flush=True)
+            for _ in range(2_000_000):
+                pass
         try:
             input("Presiona Enter para cerrar la alerta: ")
         except (EOFError, KeyboardInterrupt):
@@ -583,7 +587,6 @@ class ClockCanvasApp:
             "4 +10min",
             "5 -10min",
             "6 Reiniciar reloj",
-            "7 Redibujar",
             "8 Ajustar hora",
             "9 Temporizador",
             "0 Configuración",
@@ -700,7 +703,6 @@ class ClockCanvasApp:
                 "4 +10min",
                 "5 -10min",
                 "6 Reiniciar reloj",
-                "7 Redibujar",
                 "8 Ajustar hora",
                 "9 Temporizador",
                 "0 Configuración",
@@ -715,7 +717,7 @@ class ClockCanvasApp:
                 "2 +1s        3 -1s",
                 "4 +10min     5 -10min",
                 "6 Reiniciar reloj",
-                "7 Redibujar   8 Hora actual",
+                "8 Ajustar hora",
                 "9 Temporizador  0 Configuración",
             )
             for offset, option in enumerate(options):

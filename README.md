@@ -22,7 +22,7 @@ python3 main.py
 
 Al iniciar aparece un reloj de bienvenida y se pide la hora local en formato `HH:MM:SS`. No se lee el reloj del sistema: la hora inicial la escribe el usuario y luego avanza con un temporizador interno aproximado por conteo de ciclos.
 
-La resolución por defecto es `114 34`. Se puede cambiar desde el menú con la opción `0`.
+La resolución por defecto es `114 34`. Se puede cambiar desde el menú con la opción `0`. La velocidad del reloj es aproximada y depende del CPU.
 
 ## Controles
 
@@ -33,7 +33,6 @@ La resolución por defecto es `114 34`. Se puede cambiar desde el menú con la o
 - `4`: avanzar 10 minutos.
 - `5`: retroceder 10 minutos.
 - `6`: reiniciar el reloj a `12:00:00`.
-- `7`: redibujar el menú.
 - `8`: ajustar manualmente la hora local.
 - `9`: abrir el temporizador.
 - `0`: configuración de resolución.
@@ -50,7 +49,7 @@ Dentro de la opción `9`:
 - `6`: reiniciar.
 - `7`: volver al menú principal.
 
-Al elegir una duración o iniciar el temporizador, vuelve automáticamente a la pantalla del reloj y allí empieza la cuenta regresiva. Al llegar a cero aparece la alerta `¡TIEMPO CUMPLIDO!`; se cierra con `Enter` y el temporizador queda terminado.
+Al elegir una duración o iniciar el temporizador, vuelve automáticamente a la pantalla del reloj y allí empieza la cuenta regresiva. Al llegar a cero aparece la alerta `¡TIEMPO CUMPLIDO!`, se emiten pitidos de terminal y se cierra con `Enter`; el temporizador queda terminado.
 
 Solo se acepta un dígito del 0 al 9 en el menú principal. El menú es bloqueante, así que mientras espera un comando el reloj no se redibuja.
 
